@@ -66,6 +66,7 @@
 #define PERM_MODIFIED		0x040	// Dirty
 #define PTE_PS		0x080	// Page Size
 #define PTE_MBZ		0x180	// Bits must be zero
+#define PERM_BUFFERED 0x200 //Page it buffered
 
 // The PERM_AVAILABLE bits aren't used by the kernel or interpreted by the
 // hardware, so user processes are allowed to set them arbitrarily.
@@ -180,6 +181,9 @@ struct Segdesc {
     type, 1, dpl, 1, (unsigned) (lim) >> 16, 0, 0, 1, 0,		\
     (unsigned) (base) >> 24 }
 
+// cpu->gdt[NSEGS] holds the above segments.
+#define NSEGS     6
+
 #endif /* !__ASSEMBLER__ */
 
 // Application segment type bits
@@ -214,6 +218,9 @@ struct Segdesc {
 #ifndef __ASSEMBLER__
 
 // Task state segment format (as described by the Pentium architecture book)
+// For each CPU which executes processes possibly wanting to do system calls via interrupts, one TSS is required.
+// The only interesting fields are SS0 and ESP0. Whenever a system call occurs, the CPU gets the SS0 and ESP0-value
+// in its TSS and assigns the stack-pointer to it.
 struct Taskstate {
 	uint32 ts_link;	// Old ts selector
 	uint32 ts_esp0;	// Stack pointers and segment selectors
@@ -269,6 +276,8 @@ struct Gatedesc {
 
 // Set up a normal interrupt/trap gate descriptor.
 // - istrap: 1 for a trap (= exception) gate, 0 for an interrupt gate.
+//			The difference is that for Interrupt Gates, interrupts are automatically disabled upon entry and reenabled upon IRET,
+//			whereas this does not occur for Trap Gates.
 // - sel: Code segment selector for interrupt/trap handler
 // - off: Offset in code segment for interrupt/trap handler
 // - dpl: Descriptor Privilege Level -
@@ -306,6 +315,7 @@ struct Pseudodesc {
 	uint16 pd_lim;		// Limit
 	uint32 pd_base;		// Base address
 } __attribute__ ((packed));
+
 
 #endif /* !__ASSEMBLER__ */
 

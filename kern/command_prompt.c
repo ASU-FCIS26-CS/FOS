@@ -43,6 +43,8 @@ int execute_command(char *command_string);
 int command_writemem(int number_of_arguments, char **arguments);
 int command_readmem(int number_of_arguments, char **arguments);
 int command_meminfo(int , char **);
+//
+int command_fact(int number_of_arguments, char **arguments);
 
 //Lab2.Hands.On
 //=============
@@ -87,6 +89,7 @@ struct Command commands[] =
 		{ "wum", "writes one byte to specific location" ,command_writemem},
 		{ "rum", "reads one byte from specific location" ,command_readmem},
 		{ "meminfo", "Display number of free frames", command_meminfo},
+		{"fact", "Calculate the factorial of a number", command_fact},
 
 		//TODO: LAB2 Hands-on: add the commands here
 
@@ -193,6 +196,18 @@ int command_help(int number_of_arguments, char **arguments)
 		cprintf("%s - %s\n", commands[i].name, commands[i].description);
 
 	cprintf("-------------------\n");
+
+	return 0;
+}
+
+//calculate the factorial of a number
+int command_fact(int number_of_arguments, char **arguments){
+	int fact = 1;
+	int num = strtol(arguments[1], NULL, 10);
+	for(int i=1; i <= num ; i++){
+		fact*=i;
+	}
+	cprintf("Factorial of %d = %d\n", num, fact);
 
 	return 0;
 }

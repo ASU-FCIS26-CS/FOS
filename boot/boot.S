@@ -1,5 +1,4 @@
 #include <inc/mmu.h>
-	
 .set PROT_MODE_CSEG,0x8		# code segment selector
 .set PROT_MODE_DSEG,0x10        # data segment selector
 .set CR0_PE_ON,0x1		# protected mode enable flag

@@ -3,17 +3,19 @@
 #include <inc/mmu.h>
 #include <inc/memlayout.h>
 #include <inc/trap.h>
+//#include <kern/cpu/cpu.h>
 
-# Shift Right Logical 
+
+# Shift Right Logical
 #define SRL(val, shamt)		(((val) >> (shamt)) & ~(-1 << (32 - (shamt))))
 
 
 ###################################################################
 # The kernel (this code) is linked at address ~(KERNEL_BASE + 1 Meg),
 # but the bootloader load it at address	~1 Meg.
-#	
+#
 # RELOC(x) maps a symbol x from its link address to its actual
-# location in physical memory (its load address).	 
+# location in physical memory (its load address).
 ###################################################################
 
 #define	RELOC(x) ((x) - KERNEL_BASE)
@@ -61,8 +63,10 @@ relocated:
 	# stack backtraces will be terminated properly.
 	movl	$0x0,%ebp			# nuke frame pointer
 
-        # Leave a few words on the stack for the user trap frame
-	movl	$(ptr_stack_top-SIZEOF_STRUCT_TRAPFRAME),%esp
+    # Leave a few words on the stack for the user trap frame
+	#2024: this line is changed since the trapframe is move to the user kernel stack of each process
+	#movl	$(ptr_stack_top-SIZEOF_STRUCT_TRAPFRAME),%esp
+	movl	$(ptr_stack_top),%esp
 
 	# now to C code
 	call	FOS_initialize
@@ -71,7 +75,7 @@ relocated:
 spin:	jmp	spin
 
 
-###################################################################	
+###################################################################
 # See <inc/memlayout.h> for a complete description of these two symbols.
 ###################################################################
 .data
@@ -87,19 +91,19 @@ spin:	jmp	spin
 	.p2align	PGSHIFT		# force page alignment
 	.globl		ptr_stack_bottom
 ptr_stack_bottom:
-	.space		KERNEL_STACK_SIZE
-	.globl		ptr_stack_top   
+	.space		NCPUS*KERNEL_STACK_SIZE
+	.globl		ptr_stack_top
 ptr_stack_top:
 
 ###################################################################
-# setup the GDT	
+# setup the GDT
 ###################################################################
 	.p2align	2		# force 4 byte alignment
 mygdt:
 	SEG_NULL				# null seg
 	SEG(STA_X|STA_R, -KERNEL_BASE, 0xffffffff)	# code seg
-	SEG(STA_W, -KERNEL_BASE, 0xffffffff)	# data seg
+	SEG(STA_W, -KERNEL_BASE, 0xffffffff)		# data seg
 mygdtdesc:
-	.word	0x17			# sizeof(mygdt) - 1
+	.word	0x17				# sizeof(mygdt) - 1
 	.long	RELOC(mygdt)		# address mygdt
 

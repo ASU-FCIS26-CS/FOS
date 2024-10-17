@@ -8,10 +8,12 @@
 #include <inc/stdarg.h>
 #include <inc/error.h>
 
+extern unsigned char printProgName;
+
 /*
  * Space or zero padding and a field width are supported for the numeric
- * formats only. 
- * 
+ * formats only.
+ *
  * The special format %e takes an integer error code
  * and prints a string describing the error.
  * The integer may be positive or negative,
@@ -109,7 +111,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		case '-':
 			padc = '-';
 			goto reswitch;
-			
+
 		// flag to pad with 0's instead of spaces
 		case '0':
 			padc = '0';
@@ -233,7 +235,19 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		case '%':
 			putch(ch, putdat);
 			break;
-			
+
+		/**********************************/
+		/*2023*/
+		// DON'T Print Program Name & UD
+		case '~':
+			printProgName = 0;
+			break;
+		// Print Program Name & UD
+		case '@':
+			printProgName = 1;
+			break;
+		/**********************************/
+
 		// unrecognized escape sequence - just print it literally
 		default:
 			putch('%', putdat);

@@ -22,7 +22,12 @@ int	memcmp(const void *s1, const void *s2, uint32 len);
 void *	memfind(const void *s, int c, uint32 len);
 
 long	strtol(const char *s, char **endptr, int base);
+void	ltostr(long value, char *str);
+void	strcconcat(const char *str1, const char *str2, char *final);
+
 
 int strsplit(char *string, char *SPLIT_CHARS, char **argv, int * argc);
+/*2024*/
+char* str2lower(char *dst, const char *src);
 
 #endif /* not FOS_INC_STRING_H */

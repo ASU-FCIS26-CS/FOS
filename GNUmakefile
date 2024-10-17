@@ -12,7 +12,7 @@ OBJDIR 		:= obj
 TOOLPREFIX 	:= i386-elf-
 QEMU 		:= qemu-system-i386
 PERL		:= perl
-IMAGE 		:= $(OBJDIR)/fos.img
+IMAGE 		:= $(OBJDIR)/kern/bochs.img
 
 CC			:= $(TOOLPREFIX)gcc -m32 -pipe
 GCC_LIB 	:= $(shell $(CC) -print-libgcc-file-name)
@@ -73,6 +73,11 @@ qemu: all
 
 qemu-gdb: all
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
+grade: $(LABSETUP)grade.sh
+	$(V)$(MAKE) clean >/dev/null 2>/dev/null
+	$(MAKE) all
+	sh $(LABSETUP)grade.sh
 
 
 # For deleting the build
