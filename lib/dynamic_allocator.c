@@ -191,11 +191,33 @@ void *alloc_block_FF(uint32 size)
 			}
 		}
 
-//        void *newBlock = sbrk(effectiveSize);
-//        if (get_block_size(newBlock)<effectiveSize) return NULL;
-//		else return (void *)((char *)newBlock);
-        sbrk(effectiveSize);
-        return NULL;
+	int pages = (effectiveSize - 1 + PAGE_SIZE) / PAGE_SIZE;
+		void *ret = sbrk(pages);
+		if (ret == (void*)-1)
+			return NULL;
+
+
+		// colassing
+		uint32 *curBlkMetaData = ((uint32 *)ret - 2) ;
+	    uint32 freePrev= (~(*curBlkMetaData) & 0x1);
+	    uint32 prevSize =  (*curBlkMetaData) & ~(0x1);
+		if(freePrev){
+			struct BlockElement *lst = LIST_LAST(&freeBlocksList);
+			ret = lst;
+		}
+		
+		// b7ot fe a5r block b3d al sbrk tnf3
+		set_block_data(ret,effectiveSize,1);
+		void *newBrk = sbrk(0);
+		uint32 *edAdress = ((uint32 *)newBrk-1);
+		*edAdress = 1;
+		
+		void *newBlock = (void*)(ret+effectiveSize);
+		set_block_data((void*)newBlock,newBrk-newBlock,0);
+		struct BlockElement *v = newBlock ;
+		LIST_INSERT_TAIL(&freeBlocksList,v);
+		return ret;
+
 
 }
 //=========================================
