@@ -111,14 +111,55 @@ void *sbrk(int numOfPages)
 }
 //TODO: [PROJECT'24.MS2 - BONUS#2] [1] KERNEL HEAP - Fast Page Allocator
 
-void* kmalloc(unsigned int size)
+void *kmalloc(unsigned int size)
 {
-	//TODO: [PROJECT'24.MS2 - #03] [1] KERNEL HEAP - kmalloc
-	// Write your code here, remove the panic and write your code
-	kpanic_into_prompt("kmalloc() is not implemented yet...!!");
+    if (size == 0)
+    {
+        return NULL;
+    }
+    if (size <= DYN_ALLOC_MAX_BLOCK_SIZE )
+    {
+     
+     if(isKHeapPlacementStrategyFIRSTFIT())
+        return alloc_block_FF(size);
+        return alloc_block_BF(size);
 
-	// use "isKHeapPlacementStrategyFIRSTFIT() ..." functions to check the current strategy
+    }
+    uint32 needed_pages = size / PAGE_SIZE;
+needed_pages += (size % PAGE_SIZE != 0) ? 1 : 0;
 
+    uint32 bottom_bound = rlimit + PAGE_SIZE;
+    uint32 top_bound = KERNEL_HEAP_MAX;
+
+    uint32 free_pages_found = 0;
+    uint32 loop_address = bottom_bound;
+
+    while (loop_address < top_bound)
+    {
+        uint32 *page_table;
+        struct FrameInfo *frame = get_frame_info(ptr_page_directory, loop_address, &page_table);
+        if (frame == NULL)
+        {
+            free_pages_found++;
+            if (free_pages_found == needed_pages)
+            {
+                uint32 ret_address = loop_address - PAGE_SIZE * (needed_pages - 1);
+                for (uint32 i = 0; i < needed_pages; i++)
+                {
+                    struct FrameInfo *new_frame;
+                    allocate_frame(&new_frame);
+                    map_frame(ptr_page_directory, new_frame, ret_address + (i * PAGE_SIZE), PERM_WRITEABLE);
+                }
+                return (void *)ret_address;
+            }
+        }
+        else
+        {
+            free_pages_found = 0;
+        }
+        loop_address += PAGE_SIZE;
+    }
+    return NULL;
 }
 
 void kfree(void* virtual_address)
