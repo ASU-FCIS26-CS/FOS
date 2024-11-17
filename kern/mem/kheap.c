@@ -12,9 +12,31 @@
 //	Otherwise (if no memory OR initial size exceed the given limit): PANIC
 int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate, uint32 daLimit)
 {
-	//TODO: [PROJECT'24.MS2 - #01] [1] KERNEL HEAP - initialize_kheap_dynamic_allocator
-	// Write your code here, remove the panic and write your code
-	panic("initialize_kheap_dynamic_allocator() is not implemented yet...!!");
+	start = daStart;
+
+	brk = daStart + initSizeToAllocate;
+	brk = ROUNDUP(brk, PAGE_SIZE);
+
+	rlimit = daLimit;
+
+	if (brk > rlimit)
+	{
+		panic("NO MEM IN KHEAP INITIALIZER!!\n");
+		return E_NO_MEM;
+	}
+
+	uint32 moving_address = start;
+	while (moving_address < brk)
+	{
+		struct FrameInfo *frame;
+		allocate_frame(&frame); 
+		map_frame(ptr_page_directory, frame, moving_address, PERM_WRITEABLE);
+		moving_address += PAGE_SIZE; 
+	}
+
+	initialize_dynamic_allocator(daStart, initSizeToAllocate);
+
+	return 0;
 }
 
 void* sbrk(int numOfPages)
