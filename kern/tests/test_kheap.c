@@ -993,7 +993,7 @@ int test_kfree_bestfirstfit()
 		freeFrames = sys_calculate_free_frames() ;
 		{
 			//2 KB
-			cprintf("first block alloc\n");
+			//cprintf("first block alloc\n");
 			freeDiskFrames = pf_calculate_free_frames() ;
 			ptr_allocations[2] = kmalloc(2*kilo);
 			if ((uint32) ptr_allocations[2] < KERNEL_HEAP_START || ptr_allocations[2] >= sbrk(0) || (uint32) ptr_allocations[2] >= da_limit)
@@ -1008,7 +1008,7 @@ int test_kfree_bestfirstfit()
 			}
 
 			//2 KB
-			cprintf("second block alloc\n");
+			//cprintf("second block alloc\n");
 			freeDiskFrames = pf_calculate_free_frames() ;
 			ptr_allocations[3] = kmalloc(2*kilo);
 			if ((uint32) ptr_allocations[3] < KERNEL_HEAP_START || ptr_allocations[3] >= sbrk(0) || (uint32) ptr_allocations[3] >= da_limit)
@@ -1022,7 +1022,7 @@ int test_kfree_bestfirstfit()
 				ptr[i] = 3 ;
 			}
 		}
-		cprintf("after alloc\n");
+		//cprintf("after alloc: lets see free frames\n");
 		//kmalloc(0);
 		if ((freeFrames - sys_calculate_free_frames()) != 1) { correct = 0; cprintf("1.8 Wrong allocation: sbrk error\n"); }
 	}
@@ -1070,14 +1070,9 @@ int test_kfree_bestfirstfit()
 		ptr = (char*)ptr_allocations[3];
 		for (i = 0; i < lastIndices[3]; ++i)
 		{
-			if(ptr[i] != 3){
-				cprintf("ptr at i = %d, value is %d\n", i, ptr[i]);
-				cprintf("\n");
-
-			}
 			sums[3] += ptr[i];
 		}
-		cprintf("Sum is: %d || Correct Sum: %d\n", sums[3], 3*lastIndices[3]);
+		//cprintf("Sum is: %d || Correct Sum: %d\n", sums[3], 3*lastIndices[3]);
 		if (sums[3] != 3*lastIndices[3])	{ correct = 0; cprintf("3.1 kfree: invalid read after freeing some allocations\n"); }
 
 		//7 KB

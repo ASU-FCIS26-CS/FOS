@@ -163,7 +163,7 @@ void *alloc_block_FF(uint32 size)
 
 	//==================================================================================
 	//==================================================================================
-	struct BlockElement *blk2;
+	//struct BlockElement *blk2;
 //	cprintf("current sbrk %d\n", sbrk(0));
 //	LIST_FOREACH(blk2, &freeBlocksList){
 //		cprintf("current free block address: %d\t", (uint32)blk2);
@@ -197,7 +197,6 @@ void *alloc_block_FF(uint32 size)
 		}
 
 		int pages = (effectiveSize - 1 + PAGE_SIZE) / PAGE_SIZE;
-		cprintf("sbrk with %d pages\n", pages);
 		void *ret = sbrk(pages);
 		if (ret == (void*)-1)
 			return NULL;
@@ -214,6 +213,9 @@ void *alloc_block_FF(uint32 size)
 			LIST_REMOVE(&freeBlocksList, lst);
 			ret = lst;
 		}
+		else{
+			currVa = (void*)((uint32)last_block_tail + 2*sizeof(uint32));
+		}
 
 		// move the end block
 		void *newBrk = sbrk(0);
@@ -222,7 +224,7 @@ void *alloc_block_FF(uint32 size)
 
 		// allocate needed block, and free the remaining
 		set_block_data(currVa, effectiveSize, 1);
-		void *newBlock = (void*)(ret+effectiveSize);
+		void *newBlock = (void*)(currVa+effectiveSize);
 		set_block_data((void*)newBlock,newBrk-newBlock,1);
 		free_block(newBlock);
 

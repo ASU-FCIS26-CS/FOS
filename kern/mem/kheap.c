@@ -118,10 +118,10 @@ void *sbrk(int numOfPages)
 
 void *kmalloc(unsigned int size)
 {
-//    if (size == 0)
-//    {
-//        return NULL;
-//    }
+    if (size == 0)
+    {
+        return NULL;
+    }
     if (size <= DYN_ALLOC_MAX_BLOCK_SIZE )
     {
 		if(isKHeapPlacementStrategyFIRSTFIT())
@@ -158,7 +158,7 @@ void *kmalloc(unsigned int size)
                 }
                 // add to allocations arr
                 page_allocations[ret_address/PAGE_SIZE] = needed_pages;
-                cprintf("Size of allocation for address %d: %d\n", ret_address, needed_pages);
+                //cprintf("Size of allocation for address %x: %d\n", ret_address, needed_pages);
                 return (void *)ret_address;
             }
         }
@@ -195,7 +195,7 @@ void kfree(void* virtual_address)
 	{
 		// Get the size of the allocation (number of pages)
 		uint32 size = page_allocations[va/PAGE_SIZE];
-		cprintf("Size of done allocation for address %d: %d\n", va, size);
+		//cprintf("Size of done allocation for address %d: %d\n", va, size);
 		if (size == 0)
 		{
 			panic("kfree() called on unallocated or invalid memory in PAGE ALLOCATOR range!");
