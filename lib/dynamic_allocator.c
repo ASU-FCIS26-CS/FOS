@@ -163,7 +163,12 @@ void *alloc_block_FF(uint32 size)
 
 	//==================================================================================
 	//==================================================================================
-
+	struct BlockElement *blk2;
+//	cprintf("current sbrk %d\n", sbrk(0));
+//	LIST_FOREACH(blk2, &freeBlocksList){
+//		cprintf("current free block address: %d\t", (uint32)blk2);
+//	}
+//	cprintf("\n");
 	if (size == 0) return NULL;
 
 		uint32 effectiveSize = size + 8;
@@ -191,31 +196,36 @@ void *alloc_block_FF(uint32 size)
 			}
 		}
 
-	int pages = (effectiveSize - 1 + PAGE_SIZE) / PAGE_SIZE;
+		int pages = (effectiveSize - 1 + PAGE_SIZE) / PAGE_SIZE;
+		cprintf("sbrk with %d pages\n", pages);
 		void *ret = sbrk(pages);
 		if (ret == (void*)-1)
 			return NULL;
 
-
-		// colassing
-		uint32 *curBlkMetaData = ((uint32 *)ret - 2) ;
-	    uint32 freePrev= (~(*curBlkMetaData) & 0x1);
-	    uint32 prevSize =  (*curBlkMetaData) & ~(0x1);
-		if(freePrev){
+		// colascing
+		// get last block before old sbrk
+		uint32 *last_block_tail = ((uint32 *)ret - 2) ;
+		uint32 last_block_size = (*last_block_tail) & ~(0x1);
+		uint32 last_block_ad = (uint32)last_block_tail;
+		void* currVa = (void*)(last_block_ad - last_block_size + 2*sizeof(uint32));
+		// if it is free -> the new allocated block starts from it
+		if(is_free_block(currVa)){
 			struct BlockElement *lst = LIST_LAST(&freeBlocksList);
+			LIST_REMOVE(&freeBlocksList, lst);
 			ret = lst;
 		}
-		
-		// b7ot fe a5r block b3d al sbrk tnf3
-		set_block_data(ret,effectiveSize,1);
+
+		// move the end block
 		void *newBrk = sbrk(0);
 		uint32 *edAdress = ((uint32 *)newBrk-1);
 		*edAdress = 1;
-		
+
+		// allocate needed block, and free the remaining
+		set_block_data(currVa, effectiveSize, 1);
 		void *newBlock = (void*)(ret+effectiveSize);
-		set_block_data((void*)newBlock,newBrk-newBlock,0);
-		struct BlockElement *v = newBlock ;
-		LIST_INSERT_TAIL(&freeBlocksList,v);
+		set_block_data((void*)newBlock,newBrk-newBlock,1);
+		free_block(newBlock);
+
 		return ret;
 
 

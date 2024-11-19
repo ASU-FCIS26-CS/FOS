@@ -118,10 +118,10 @@ void *sbrk(int numOfPages)
 
 void *kmalloc(unsigned int size)
 {
-    if (size == 0)
-    {
-        return NULL;
-    }
+//    if (size == 0)
+//    {
+//        return NULL;
+//    }
     if (size <= DYN_ALLOC_MAX_BLOCK_SIZE )
     {
 		if(isKHeapPlacementStrategyFIRSTFIT())
@@ -212,6 +212,7 @@ void kfree(void* virtual_address)
 ;			struct FrameInfo* frame = get_frame_info(ptr_page_directory, curr_address, &ptr_page_table);
 			if (frame != NULL)
 			{
+				//free_frame(frame);
 				unmap_frame(ptr_page_directory, curr_address);
 			}
 			// Move to the next page
