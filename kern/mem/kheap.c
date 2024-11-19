@@ -36,6 +36,11 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 
 	initialize_dynamic_allocator(daStart, initSizeToAllocate);
 
+	// initialize allocations
+	for(int i=0; i < 2060; i++){
+		page_allocations[i] = 0;
+	}
+
 	return 0;
 }
 
@@ -151,6 +156,8 @@ void *kmalloc(unsigned int size)
                     allocate_frame(&new_frame);
                     map_frame(ptr_page_directory, new_frame, ret_address + (i * PAGE_SIZE), PERM_WRITEABLE);
                 }
+                // add to allocations arr
+                page_allocations[ret_address/PAGE_SIZE] = needed_pages;
                 return (void *)ret_address;
             }
         }
@@ -186,14 +193,14 @@ void kfree(void* virtual_address)
 	if (va >= rlimit+PAGE_SIZE && va < KERNEL_HEAP_MAX)
 	{
 		// Get the size of the allocation (number of pages) using dynamic allocator metadata
-		uint32 size = *((uint32 *)virtual_address); // This function should return the allocated size in bytes
+		uint32 size = page_allocations[va/PAGE_SIZE];
 		if (size == 0)
 		{
 			panic("kfree() called on unallocated or invalid memory in PAGE ALLOCATOR range!");
 			return;
 		}
 		// Calculate the number of pages
-		uint32 num_pages = size / PAGE_SIZE + (size % PAGE_SIZE != 0 ? 1 : 0);
+		uint32 num_pages = size / PAGE_SIZE;
 		// Free each page in the range
 		uint32 curr_address = va;
 		for (uint32 i = 0; i < num_pages; i++)
@@ -201,8 +208,8 @@ void kfree(void* virtual_address)
 			struct FrameInfo* frame = get_frame_info(ptr_page_directory, curr_address, NULL);
 			if (frame != NULL)
 			{
-				free_frame(frame);              // Free the frame
 				unmap_frame(ptr_page_directory, curr_address); // Unmap the frame
+				free_frame(frame);              // Free the frame
 			}
 			curr_address += PAGE_SIZE;          // Move to the next page
 		}
