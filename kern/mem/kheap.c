@@ -158,6 +158,7 @@ void *kmalloc(unsigned int size)
                 }
                 // add to allocations arr
                 page_allocations[ret_address/PAGE_SIZE] = needed_pages;
+                cprintf("Size of allocation for address %d: %d\n", ret_address, needed_pages);
                 return (void *)ret_address;
             }
         }
@@ -192,26 +193,29 @@ void kfree(void* virtual_address)
 	// Case 2: Check if the address is within the [PAGE ALLOCATOR] range
 	if (va >= rlimit+PAGE_SIZE && va < KERNEL_HEAP_MAX)
 	{
-		// Get the size of the allocation (number of pages) using dynamic allocator metadata
+		// Get the size of the allocation (number of pages)
 		uint32 size = page_allocations[va/PAGE_SIZE];
+		cprintf("Size of done allocation for address %d: %d\n", va, size);
 		if (size == 0)
 		{
 			panic("kfree() called on unallocated or invalid memory in PAGE ALLOCATOR range!");
 			return;
 		}
 		// Calculate the number of pages
-		uint32 num_pages = size / PAGE_SIZE;
+		uint32 num_pages = size;
 		// Free each page in the range
 		uint32 curr_address = va;
 		for (uint32 i = 0; i < num_pages; i++)
 		{
-			struct FrameInfo* frame = get_frame_info(ptr_page_directory, curr_address, NULL);
+			//cprintf("current address: %d\n", curr_address);
+			uint32* ptr_page_table = NULL;
+;			struct FrameInfo* frame = get_frame_info(ptr_page_directory, curr_address, &ptr_page_table);
 			if (frame != NULL)
 			{
-				unmap_frame(ptr_page_directory, curr_address); // Unmap the frame
-				free_frame(frame);              // Free the frame
+				unmap_frame(ptr_page_directory, curr_address);
 			}
-			curr_address += PAGE_SIZE;          // Move to the next page
+			// Move to the next page
+			curr_address += PAGE_SIZE;
 		}
 
 		return;
