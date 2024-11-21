@@ -46,5 +46,6 @@ uint32 start;
 uint32 brk;
 uint32 rlimit;
 uint32 page_allocations[2060];
+uint32 mapping_physicalFrames_to_virtualAddress[1024*10];
 
 #endif // FOS_KERN_KHEAP_H_
