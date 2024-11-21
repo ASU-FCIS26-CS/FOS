@@ -151,7 +151,17 @@ void fault_handler(struct Trapframe *tf)
 			//TODO: [PROJECT'24.MS2 - #08] [2] FAULT HANDLER I - Check for invalid pointers
 			//(e.g. pointing to unmarked user heap page, kernel or wrong access rights),
 			//your code is here
+			uint32 Direc = PDX(fault_va);
+            uint32 perms = pt_get_page_permissions(&Direc,fault_va);
 
+            if(fault_va >= KERNEL_BASE && fault_va <= 0xffffffff)
+			{
+				env_exit();
+			}
+			else if((perms & PERM_PRESENT) && (!(perms & PERM_WRITEABLE)))
+			{
+				env_exit();
+			}
 			/*============================================================================================*/
 		}
 
@@ -227,8 +237,31 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
 		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
 		// Write your code here, remove the panic and write your code
-		panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
+		//panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
+        struct  FrameInfo *ptr_element_frame = NULL;
+        allocate_frame(&(ptr_element_frame));
+        map_frame((faulted_env->env_page_directory),ptr_element_frame,fault_va,PERM_USER | PERM_WRITEABLE);
 
+        //get page from page file
+        int checking  = pf_read_env_page(faulted_env , &fault_va);
+
+        if(checking == 0 || (checking == E_PAGE_NOT_EXIST_IN_PF && ((fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX) || (fault_va >= USTACKBOTTOM && fault_va <= USTACKTOP))))
+        {
+
+            env_page_ws_list_create_element(faulted_env,fault_va); 
+            if(wsSize >= (faulted_env->page_WS_max_size))
+            {
+                //faulted_env->page_last_WS_element = (struct WorkingSetElement) LIST_FIRST(&(faulted_env->page_WS_list));
+            }
+			else
+			{
+                //faulted_env->page_last_WS_element = NULL;
+			}
+        }
+        else
+        {
+            env_exit();
+        }
 		//refer to the project presentation and documentation for details
 	}
 	else
