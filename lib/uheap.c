@@ -16,20 +16,80 @@ void* sbrk(int increment)
 //=================================
 // [2] ALLOCATE SPACE IN USER HEAP:
 //=================================
+
+static uint8 page_allocation_status[(USER_HEAP_MAX - USER_HEAP_START) / PAGE_SIZE] = {0}; // 0 = free, 1 = allocated
+
 void* malloc(uint32 size)
 {
-	//==============================================================
-	//DON'T CHANGE THIS CODE========================================
-	if (size == 0) return NULL ;
-	//==============================================================
-	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
-	// Write your code here, remove the panic and write your code
-	panic("malloc() is not implemented yet...!!");
-	return NULL;
-	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
-	//to check the current strategy
+    //==============================================================
+    //DON'T CHANGE THIS CODE========================================
+    if (size == 0) return NULL;
+    //==============================================================
+    //[PROJECT'24.MS2] [2] USER HEAP - malloc() [User Side]
 
+    if (size <= DYN_ALLOC_MAX_BLOCK_SIZE)
+    {
+        if (sys_isUHeapPlacementStrategyFIRSTFIT())
+            return alloc_block_FF(size);
+        else
+            return alloc_block_BF(size);
+    }
+    else if (size > DYN_ALLOC_MAX_BLOCK_SIZE)
+    {
+        // Page Allocator for larger allocations
+        uint32 num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to nearest page
+        uint32 required_size = num_pages * PAGE_SIZE;         // Total required size in bytes
+
+        // First-Fit Strategy
+        for (uint32 addr = USER_HEAP_START; addr + required_size <= USER_HEAP_MAX; addr += PAGE_SIZE)
+        {
+            uint32 index = (addr - USER_HEAP_START) / PAGE_SIZE;
+            uint8 is_free = 1;
+
+            // Check if all pages in the range are free
+            for (uint32 i = 0; i < num_pages; i++)
+            {
+                if (page_allocation_status[index + i] == 1)
+                {
+                    is_free = 0;
+                    break;
+                }
+            }
+
+            if (is_free)
+            {
+                // Mark the pages as allocated
+                for (uint32 i = 0; i < num_pages; i++)
+                {
+                    page_allocation_status[index + i] = 1;
+                }
+
+                // Allocate pages using sys_allocate_user_mem
+                sys_allocate_user_mem(addr, required_size);
+
+                // Return the starting address of the allocated space
+                return (void*)addr;
+            }
+        }
+    }
+
+    // If allocation fails, return NULL
+    return NULL;
 }
+// void* malloc(uint32 size)
+// {
+// 	//==============================================================
+// 	//DON'T CHANGE THIS CODE========================================
+// 	if (size == 0) return NULL ;
+// 	//==============================================================
+// 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
+// 	// Write your code here, remove the panic and write your code
+// 	panic("malloc() is not implemented yet...!!");
+// 	return NULL;
+// 	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
+// 	//to check the current strategy
+
+// }
 
 //=================================
 // [3] FREE SPACE FROM USER HEAP:
@@ -38,38 +98,38 @@ void free(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
 	// Write your code here, remove the panic and write your code
-	// panic("free() is not implemented yet...!!");
+	panic("free() is not implemented yet...!!");
 
-	uint32 va = (uint32)virtual_address;
+	// uint32 va = (uint32)virtual_address;
 
-	// Case 1: Check if the address is within the [BLOCK ALLOCATOR] range
-	if (va >= USER_HEAP_START && va < myEnv->rlimit)
-	{
-		// Use the dynamic allocator to free the block
-		free_block(virtual_address);
-		return;
-	}
+	// // Case 1: Check if the address is within the [BLOCK ALLOCATOR] range
+	// if (va >= USER_HEAP_START && va < myEnv->rlimit)
+	// {
+	// 	// Use the dynamic allocator to free the block
+	// 	free_block(virtual_address);
+	// 	return;
+	// }
 
-	if (va >= myEnv->rlimit+PAGE_SIZE && va < USER_HEAP_MAX){
+	// if (va >= myEnv->rlimit+PAGE_SIZE && va < USER_HEAP_MAX){
 		
-		uint32 size = userPage_allocations[va/PAGE_SIZE];
-		//cprintf("Size of done allocation for address %d: %d\n", va, size);
-		if (size == 0)
-		{
-			panic("kfree() called on unallocated or invalid memory in PAGE ALLOCATOR range!");
-			return;
-		}
-		// Calculate the number of pages
-		uint32 num_pages = size;
-		// Free each page in the range
-		uint32 index = (va - USER_HEAP_START) / PAGE_SIZE;
-		 for (uint32 i = 0; i < num_pages; i++)
-        {
-             page_allocation_status[index + i] = 0;
-        }
+	// 	uint32 size = userPage_allocations[va/PAGE_SIZE];
+	// 	//cprintf("Size of done allocation for address %d: %d\n", va, size);
+	// 	if (size == 0)
+	// 	{
+	// 		panic("kfree() called on unallocated or invalid memory in PAGE ALLOCATOR range!");
+	// 		return;
+	// 	}
+	// 	// Calculate the number of pages
+	// 	uint32 num_pages = size;
+	// 	// Free each page in the range
+	// 	uint32 index = (va - USER_HEAP_START) / PAGE_SIZE;
+	// 	 for (uint32 i = 0; i < num_pages; i++)
+    //     {
+    //          page_allocation_status[index + i] = 0;
+    //     }
 
-		sys_free_user_mem(va , num_pages*PAGE_SIZE);
-	}
+	// 	sys_free_user_mem(va , num_pages*PAGE_SIZE);
+	// }
 }
 
 

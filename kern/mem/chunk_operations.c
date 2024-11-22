@@ -186,16 +186,40 @@ void* sys_sbrk(int numOfPages)
 //=====================================
 void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
-	/*====================================*/
-	/*Remove this line before start coding*/
-//	inctst();
-//	return;
-	/*====================================*/
+    // Align the starting address and size to page boundaries
+    uint32 aligned_va = ROUNDDOWN(virtual_address, PAGE_SIZE);
+    uint32 aligned_size = ROUNDUP(size, PAGE_SIZE);
+    uint32 end_va = aligned_va + aligned_size;
 
-	//TODO: [PROJECT'24.MS2 - #13] [3] USER HEAP [KERNEL SIDE] - allocate_user_mem()
-	// Write your code here, remove the panic and write your code
-	panic("allocate_user_mem() is not implemented yet...!!");
+    // Iterate through each page in the range
+    for (uint32 va = aligned_va; va < end_va; va += PAGE_SIZE)
+    {
+        uint32* page_table;
+        // Check if the page table exists
+        int ret = get_page_table(e->env_page_directory, va, &page_table);
+
+        // If the page table doesn't exist, create it
+        if (ret != TABLE_IN_MEMORY)
+        {
+            create_page_table(e->env_page_directory, va);
+        }
+
+        // Set the page permissions to mark the page as allocated
+        pt_set_page_permissions(e->env_page_directory, va, PERM_AVAILABLE, 0);
+    }
 }
+// void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
+// {
+// 	/*====================================*/
+// 	/*Remove this line before start coding*/
+// //	inctst();
+// //	return;
+// 	/*====================================*/
+
+// 	//TODO: [PROJECT'24.MS2 - #13] [3] USER HEAP [KERNEL SIDE] - allocate_user_mem()
+// 	// Write your code here, remove the panic and write your code
+// 	panic("allocate_user_mem() is not implemented yet...!!");
+// }
 
 //=====================================
 // 2) FREE USER MEMORY:
