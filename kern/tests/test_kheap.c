@@ -1624,7 +1624,7 @@ int test_kheap_phys_addr()
 					if (correct)
 					{ correct = 0; cprintf("5.2 Wrong kheap_physical_address\n"); }
 				}
-				va += PAGE_SIZE;
+				 va += PAGE_SIZE;
 			}
 		}
 	}
