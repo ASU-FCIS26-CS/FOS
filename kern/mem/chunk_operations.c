@@ -122,6 +122,7 @@ uint32 calculate_required_frames(uint32* page_directory, uint32 sva, uint32 size
 //=====================================
 void* sys_sbrk(int numOfPages)
 {
+
 	/* numOfPages > 0: move the segment break of the current user program to increase the size of its heap
 	 * 				by the given number of pages. You should allocate NOTHING,
 	 * 				and returns the address of the previous break (i.e. the beginning of newly mapped memory).
@@ -130,7 +131,7 @@ void* sys_sbrk(int numOfPages)
 	 * NOTES:
 	 * 	1) As in real OS, allocate pages lazily. While sbrk moves the segment break, pages are not allocated
 	 * 		until the user program actually tries to access data in its heap (i.e. will be allocated via the fault handler).
-	 * 	2) Allocating additional pages for a process’ heap will fail if, for example, the free frames are exhausted
+	 * 	2) Allocating additional pages for a processï¿½ heap will fail if, for example, the free frames are exhausted
 	 * 		or the break exceed the limit of the dynamic allocator. If sys_sbrk fails, the net effect should
 	 * 		be that sys_sbrk returns (void*) -1 and that the segment break and the process heap are unaffected.
 	 * 		You might have to undo any operations you have done so far in this case.
@@ -139,9 +140,43 @@ void* sys_sbrk(int numOfPages)
 	//TODO: [PROJECT'24.MS2 - #11] [3] USER HEAP - sys_sbrk
 	/*====================================*/
 	/*Remove this line before start coding*/
-	return (void*)-1 ;
+	// return (void*)-1 ;
 	/*====================================*/
 	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
+
+	if(numOfPages==0) {
+		return (void*) env->brk;
+	}
+	else if(numOfPages>0){
+		
+		uint32 oldBrk = brk;
+		char* newBrk = (char*)brk ;
+
+		// bzwd 4096 fe 3dd al pages da al bt7rko wa ba round le 22rb page
+		newBrk+=(numOfPages*PAGE_SIZE) ;
+		newBrk = ROUNDUP(newBrk, PAGE_SIZE);
+		if ((int32)newBrk > env->rlimit)
+		{
+			return (void *)-1;
+		}
+
+		// update the brk in the current environment
+        env->brk = (int32)newBrk;
+		return (void *)oldBrk;
+	}
+	else{
+		char* new_brk = (char*)brk ;
+		new_brk+=(numOfPages*PAGE_SIZE) ;
+
+		if ((int)new_brk < start)
+		{
+			new_brk = (char*)start;
+		}
+	    env->brk = (int)new_brk;
+		return (void *)brk;
+	}
+	
+	return NULL;
 
 
 }
