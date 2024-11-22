@@ -38,7 +38,38 @@ void free(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
 	// Write your code here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
+	// panic("free() is not implemented yet...!!");
+
+	uint32 va = (uint32)virtual_address;
+
+	// Case 1: Check if the address is within the [BLOCK ALLOCATOR] range
+	if (va >= USER_HEAP_START && va < myEnv->rlimit)
+	{
+		// Use the dynamic allocator to free the block
+		free_block(virtual_address);
+		return;
+	}
+
+	if (va >= myEnv->rlimit+PAGE_SIZE && va < USER_HEAP_MAX){
+		
+		uint32 size = userPage_allocations[va/PAGE_SIZE];
+		//cprintf("Size of done allocation for address %d: %d\n", va, size);
+		if (size == 0)
+		{
+			panic("kfree() called on unallocated or invalid memory in PAGE ALLOCATOR range!");
+			return;
+		}
+		// Calculate the number of pages
+		uint32 num_pages = size;
+		// Free each page in the range
+		uint32 index = (va - USER_HEAP_START) / PAGE_SIZE;
+		 for (uint32 i = 0; i < num_pages; i++)
+        {
+             page_allocation_status[index + i] = 0;
+        }
+
+		sys_free_user_mem(va , num_pages*PAGE_SIZE);
+	}
 }
 
 
