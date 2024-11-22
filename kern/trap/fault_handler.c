@@ -151,8 +151,26 @@ void fault_handler(struct Trapframe *tf)
 			//TODO: [PROJECT'24.MS2 - #08] [2] FAULT HANDLER I - Check for invalid pointers
 			//(e.g. pointing to unmarked user heap page, kernel or wrong access rights),
 			//your code is here
+			uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),fault_va);
 
-			/*============================================================================================*/
+			            if(fault_va >= USER_LIMIT)
+						{
+			            	cprintf("I'm 1 \n");
+							env_exit();
+						}
+						else if((perms & PERM_PRESENT) && (!(perms & PERM_WRITEABLE)))
+						{
+			            	cprintf("I'm 2 \n");
+
+							env_exit();
+						}
+						else if((fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX) && (!(perms & PERM_AVAILABLE)))
+			            {
+			            	cprintf("I'm 3 \n");
+
+			                env_exit();
+			            }
+		/*============================================================================================*/
 		}
 
 		/*2022: Check if fault due to Access Rights */
@@ -222,14 +240,54 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
 
+		//cprintf("I got here 1 \n");
+		cprintf("%d \n", wsSize);
+		cprintf("%d \n", (faulted_env->page_WS_max_size));
+		//uint32 freePages = sys_calculate_free_frames();
+
 	if(wsSize < (faulted_env->page_WS_max_size))
 	{
+		//cprintf("I got here \n");
 		//cprintf("PLACEMENT=========================WS Size = %d\n", wsSize );
 		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
 		// Write your code here, remove the panic and write your code
-		panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
+		//panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
 
 		//refer to the project presentation and documentation for details
+
+		struct  FrameInfo *ptr_element_frame;
+		        allocate_frame(&(ptr_element_frame));
+		        map_frame((faulted_env->env_page_directory),ptr_element_frame,fault_va,PERM_USER | PERM_WRITEABLE);
+
+		        //get page from page file
+		        int checking  = pf_read_env_page(faulted_env , &fault_va);
+
+		        if(checking == 0 || (checking == E_PAGE_NOT_EXIST_IN_PF && ((fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX) || (fault_va >= USTACKBOTTOM && fault_va <= USTACKTOP))))
+		        {
+		            struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env,fault_va);
+
+	                LIST_INSERT_TAIL(&faulted_env->page_WS_list, new_element);
+
+	                env_page_ws_print(faulted_env);
+					cprintf("Adding element: fault_va = 0x%x\n", fault_va);
+					cprintf("New working set size: %d\n", LIST_SIZE(&(faulted_env->page_WS_list)));
+					//cprintf("fault size: %d\n", (sys_calculate_free_frames()-freePages));
+
+					wsSize++;
+
+		            if(wsSize >= (faulted_env->page_WS_max_size))
+		            {
+		                faulted_env->page_last_WS_element = (struct WorkingSetElement *) LIST_FIRST(&(faulted_env->page_WS_list));
+		            }
+					else
+					{
+		                faulted_env->page_last_WS_element = NULL;
+					}
+		        }
+		        else
+		        {
+		            env_exit();
+		        }
 	}
 	else
 	{

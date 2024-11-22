@@ -558,7 +558,7 @@ int pf_calculate_allocated_pages(struct Env* ptr_env)
 	uint32 pdIndex;
 	uint32 pa;
 	uint32 counter=0;
-
+	cprintf("I'm here pf \n");
 	for (pdIndex = 0; pdIndex < PDX(USER_TOP) ; pdIndex++)
 	{
 		// only look at mapped page tables
