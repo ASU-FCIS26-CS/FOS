@@ -117,14 +117,21 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 #if USE_KHEAP
 	//	cprintf("CURRENT WS CONTENT BEFORE CHECKING:\n");
 	//	env_page_ws_print(curenv);
+
+	//cprintf("I'm here 04");
+
 	struct Env* cur_env = get_cpu_proc();
 	assert(cur_env != NULL);
+	//cprintf("I'm here 05");
+
 	struct Env* env = cur_env;
 	int WS_list_validation = 1;
 	struct WorkingSetElement* ptr_WS_element;
 
 	if (chk_status == 0 || chk_status == 1)
 	{
+		//cprintf("I'm here 01");
+
 		if(LIST_SIZE(&(env->page_WS_list)) != actual_WS_list_size)
 		{
 			return WS_list_validation = 0;
@@ -133,6 +140,8 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 	//if it's required to check the last_WS_element
 	if (last_WS_element_content != 0)
 	{
+		//cprintf("I'm here 02");
+
 		if (ROUNDDOWN(env->page_last_WS_element->virtual_address, PAGE_SIZE) != ROUNDDOWN(last_WS_element_content, PAGE_SIZE))
 		{
 			return WS_list_validation = 0;
@@ -189,6 +198,7 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 	}
 	else if (chk_status == 0 || chk_status == 2)
 	{
+		//cprintf("I'm here \n");
 		for (int idx_expected_list = 0; idx_expected_list < actual_WS_list_size; ++idx_expected_list)
 		{
 			bool found = 0;
@@ -210,6 +220,10 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 	//Check NON-EXITENCE of the Given Addresses
 	else if (chk_status == 3)
 	{
+		//cprintf("I'm here 2");
+
+		//cprintf("I'm here 2");
+
 		for (int idx_expected_list = 0; idx_expected_list < actual_WS_list_size; ++idx_expected_list)
 		{
 			bool found = 0;

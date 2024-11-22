@@ -316,11 +316,11 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 	//TODO: [PROJECT'24.MS2 - #06] [1] KERNEL HEAP - kheap_virtual_address
 	// Write your code here, remove the panic and write your code
 	//panic("kheap_virtual_address() is not implemented yet...!!");
-	if (physical_address == 0) {
-       return 0; 
-     }
+	  if (physical_address == 0) {
+        return 0; 
+    }
 
-	uint32 frameNumber = physical_address >> 12;  
+	  uint32 frameNumber = physical_address >> 12;  
     uint32 offset = physical_address & 0xFFF;      
 
 	// Accessing the virtual address associated with this physical frame

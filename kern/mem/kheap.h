@@ -38,6 +38,13 @@ void *krealloc(void *virtual_address, unsigned int new_size);
 unsigned int kheap_virtual_address(unsigned int physical_address);
 unsigned int kheap_physical_address(unsigned int virtual_address);
 
+uint32 start;
+uint32 brk;
+uint32 rlimit;
+uint32 mapping_physicalFrames_to_virtualAddress[1024*10];
+uint32 page_allocations[2060];
+
+
 int numOfKheapVACalls ;
 
 
