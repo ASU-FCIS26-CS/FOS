@@ -29,24 +29,28 @@ void* malloc(uint32 size)
 
     if (size <= DYN_ALLOC_MAX_BLOCK_SIZE)
     {
+		// cprintf("entered dynamic allocation\n");
         if (sys_isUHeapPlacementStrategyFIRSTFIT())
-            return alloc_block_FF(size);
-        else
-            return alloc_block_BF(size);
+            return (void*) alloc_block_FF(size);
+        // else
+        //     return alloc_block_BF(size);
     }
     else if (size > DYN_ALLOC_MAX_BLOCK_SIZE)
     {
-        // Page Allocator for larger allocations
-        uint32 num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to nearest page
-        uint32 required_size = num_pages * PAGE_SIZE;         // Total required size in bytes
 
+
+        uint32 num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to nearest page
+        // Page Allocator for larger allocations
+
+        uint32 required_size = num_pages * PAGE_SIZE;         // Total required size in bytes
         // First-Fit Strategy
-        for (uint32 addr = USER_HEAP_START; addr + required_size <= USER_HEAP_MAX; addr += PAGE_SIZE)
+		for (uint32 addr = myEnv->rlimit + PAGE_SIZE; addr + required_size <= USER_HEAP_MAX - PAGE_SIZE; addr += PAGE_SIZE)
         {
             uint32 index = (addr - USER_HEAP_START) / PAGE_SIZE;
             uint8 is_free = 1;
 
-            // Check if all pages in the range are free
+
+            // // Check if all pages in the range are free
             for (uint32 i = 0; i < num_pages; i++)
             {
                 if (page_allocation_status[index + i] == 1)
@@ -55,7 +59,8 @@ void* malloc(uint32 size)
                     break;
                 }
             }
-
+			// cprintf("addr: %p , pagestatus[idx] %d\n", addr, page_allocation_status[index]);
+			// if(page_allocation_status[index ] == 0 ) return (void*)addr;
             if (is_free)
             {
                 // Mark the pages as allocated
@@ -64,7 +69,6 @@ void* malloc(uint32 size)
                     page_allocation_status[index + i] = 1;
                 }
 
-                // Allocate pages using sys_allocate_user_mem
                 sys_allocate_user_mem(addr, required_size);
 
                 // Return the starting address of the allocated space

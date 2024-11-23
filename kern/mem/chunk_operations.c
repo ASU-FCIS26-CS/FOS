@@ -143,38 +143,49 @@ void* sys_sbrk(int numOfPages)
 	// return (void*)-1 ;
 	/*====================================*/
 	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
-
 	if(numOfPages==0) {
 		return (void*) env->brk;
 	}
 	else if(numOfPages>0){
 		
-		uint32 oldBrk = brk;
-		char* newBrk = (char*)brk ;
+		uint32 oldBrk = env->brk;
+		char* newBrk = (char*)oldBrk ;
 
 		// bzwd 4096 fe 3dd al pages da al bt7rko wa ba round le 22rb page
 		newBrk+=(numOfPages*PAGE_SIZE) ;
 		newBrk = ROUNDUP(newBrk, PAGE_SIZE);
-		if ((int32)newBrk > env->rlimit)
+		if ((int32)newBrk > (int32)env->rlimit)
 		{
 			return (void *)-1;
 		}
 
+
+		// uint32 moving_address = start;
+		// while (moving_address <(int32)newBrk )
+		// {
+			
+		// 	cprintf("setting permission\n");
+		// 	// sys_allocate_user_mem(moving_address, PAGE_SIZE);
+		// 	// PERM_AVAILABLE(moving_address,)
+		// 	pt_set_page_permissions(env,moving_address,PERM_AVAILABLE,PERM_PRESENT); 
+		// 	moving_address += PAGE_SIZE; 
+		// }
 		// update the brk in the current environment
         env->brk = (int32)newBrk;
+
 		return (void *)oldBrk;
 	}
-	else{
-		char* new_brk = (char*)brk ;
-		new_brk+=(numOfPages*PAGE_SIZE) ;
+	// else{
+	// 	char* new_brk = (char*)brk ;
+	// 	new_brk+=(numOfPages*PAGE_SIZE) ;
 
-		if ((int)new_brk < start)
-		{
-			new_brk = (char*)start;
-		}
-	    env->brk = (int)new_brk;
-		return (void *)brk;
-	}
+	// 	if ((int)new_brk < start)
+	// 	{
+	// 		new_brk = (char*)start;
+	// 	}
+	//     env->brk = (int)new_brk;
+	// 	return (void *)brk;
+	// }
 	
 	return NULL;
 
