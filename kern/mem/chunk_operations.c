@@ -173,7 +173,7 @@ void* sys_sbrk(int numOfPages)
 			// If the page table doesn't exist, create it
 			if (ret != TABLE_IN_MEMORY)
 			{
-				cprintf("create page table\n");
+				// cprintf("create page table\n");
 				create_page_table(env->env_page_directory, moving_address);
 			}
 
@@ -186,17 +186,30 @@ void* sys_sbrk(int numOfPages)
 
 		return (void *)oldBrk;
 	}
-	// else{
-	// 	char* new_brk = (char*)brk ;
-	// 	new_brk+=(numOfPages*PAGE_SIZE) ;
+	else{
+		char* new_brk = (char*)env->brk ;
+		new_brk+=(numOfPages*PAGE_SIZE) ;
 
-	// 	if ((int)new_brk < start)
-	// 	{
-	// 		new_brk = (char*)start;
-	// 	}
-	//     env->brk = (int)new_brk;
-	// 	return (void *)brk;
-	// }
+		if ((int)new_brk < env->start)
+		{
+			new_brk = (char*)env->start;
+		}
+		uint32 moving_address = (uint32)env->brk;
+		while(moving_address >=(uint32)new_brk){
+			
+				unmap_frame(env->env_page_directory , moving_address); 
+
+				// umMark the page for this address
+				pt_set_page_permissions(env->env_page_directory, moving_address , 0 ,  PERM_AVAILABLE );
+
+				//Remove an existing environment page from the page file
+				pf_remove_env_page(env , moving_address);
+				//Flush certain Virtual Address from Working Set
+				env_page_ws_invalidate(env,moving_address);
+		}
+	    env->brk = (int)new_brk;
+		return (void *)brk;
+	}
 	
 	return NULL;
 
