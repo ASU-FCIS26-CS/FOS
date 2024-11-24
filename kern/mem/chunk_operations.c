@@ -142,6 +142,7 @@ void* sys_sbrk(int numOfPages)
 	/*Remove this line before start coding*/
 	// return (void*)-1 ;
 	/*====================================*/
+	// cprintf("entered sys sbrk\n");
 	struct Env* env = get_cpu_proc(); //the current running Environment to adjust its break limit
 	if(numOfPages==0) {
 		return (void*) env->brk;
@@ -160,16 +161,26 @@ void* sys_sbrk(int numOfPages)
 		}
 
 
-		// uint32 moving_address = start;
-		// while (moving_address <(int32)newBrk )
-		// {
+		uint32 moving_address = env-> start;
+		while (moving_address <(int32)newBrk )
+		{
 			
-		// 	cprintf("setting permission\n");
-		// 	// sys_allocate_user_mem(moving_address, PAGE_SIZE);
-		// 	// PERM_AVAILABLE(moving_address,)
-		// 	pt_set_page_permissions(env,moving_address,PERM_AVAILABLE,PERM_PRESENT); 
-		// 	moving_address += PAGE_SIZE; 
-		// }
+			// cprintf("setting permission\n");
+	  		 uint32* page_table;
+       		 // Check if the page table exists
+      		 int ret = get_page_table(env->env_page_directory, moving_address, &page_table);
+
+			// If the page table doesn't exist, create it
+			if (ret != TABLE_IN_MEMORY)
+			{
+				cprintf("create page table\n");
+				create_page_table(env->env_page_directory, moving_address);
+			}
+
+			// Set the page permissions to mark the page as allocated
+			pt_set_page_permissions(env->env_page_directory, moving_address, PERM_AVAILABLE, 0);
+			moving_address+=PAGE_SIZE; 
+		}  
 		// update the brk in the current environment
         env->brk = (int32)newBrk;
 
@@ -235,22 +246,37 @@ void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 //=====================================
 // 2) FREE USER MEMORY:
 //=====================================
+
+
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
-	/*====================================*/
-	/*Remove this line before start coding*/
-//	inctst();
-//	return;
-	/*====================================*/
-
 	//TODO: [PROJECT'24.MS2 - #15] [3] USER HEAP [KERNEL SIDE] - free_user_mem
 	// Write your code here, remove the panic and write your code
-	panic("free_user_mem() is not implemented yet...!!");
+	//panic("free_user_mem() is not implemented yet...!!");
+
+	uint32 roundingSize = ROUNDUP (size , PAGE_SIZE );
+	uint32 roundingVirtAddress = ROUNDDOWN (virtual_address , PAGE_SIZE );
+	uint32 endVirtualAddress = roundingVirtAddress + roundingSize ;
+
+	 for (uint32 i = roundingVirtAddress ; i < endVirtualAddress ; i += PAGE_SIZE)
+    {	
+		//unMaping frame for this address
+		unmap_frame(e->env_page_directory , i );
+
+		// umMark the page for this address
+		pt_set_page_permissions(e->env_page_directory, i , 0 ,  PERM_AVAILABLE );
+
+		//Remove an existing environment page from the page file
+		pf_remove_env_page(e , i);
+
+		//Flush certain Virtual Address from Working Set
+		env_page_ws_invalidate(e,i);
+
+	}
 
 
 	//TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
 }
-
 //=====================================
 // 2) FREE USER MEMORY (BUFFERING):
 //=====================================

@@ -102,41 +102,45 @@ void free(void* virtual_address)
 {
 	//TODO: [PROJECT'24.MS2 - #14] [3] USER HEAP [USER SIDE] - free()
 	// Write your code here, remove the panic and write your code
-	panic("free() is not implemented yet...!!");
+	//panic("free() is not implemented yet...!!");
 
-	// uint32 va = (uint32)virtual_address;
+	uint32 va = (uint32)virtual_address;
 
-	// // Case 1: Check if the address is within the [BLOCK ALLOCATOR] range
-	// if (va >= USER_HEAP_START && va < myEnv->rlimit)
-	// {
-	// 	// Use the dynamic allocator to free the block
-	// 	free_block(virtual_address);
-	// 	return;
-	// }
+	// Case 1: Check if the address is within the [BLOCK ALLOCATOR] range
+	if ( va >= USER_HEAP_START && va <  myEnv->rlimit )
+	{
+		// Use the dynamic allocator to free the block
+		free_block(virtual_address);
+		return;
+	}
 
-	// if (va >= myEnv->rlimit+PAGE_SIZE && va < USER_HEAP_MAX){
-		
-	// 	uint32 size = userPage_allocations[va/PAGE_SIZE];
-	// 	//cprintf("Size of done allocation for address %d: %d\n", va, size);
-	// 	if (size == 0)
-	// 	{
-	// 		panic("kfree() called on unallocated or invalid memory in PAGE ALLOCATOR range!");
-	// 		return;
-	// 	}
-	// 	// Calculate the number of pages
-	// 	uint32 num_pages = size;
-	// 	// Free each page in the range
-	// 	uint32 index = (va - USER_HEAP_START) / PAGE_SIZE;
-	// 	 for (uint32 i = 0; i < num_pages; i++)
-    //     {
-    //          page_allocation_status[index + i] = 0;
-    //     }
+	if (va >= myEnv->rlimit + PAGE_SIZE && va < USER_HEAP_MAX)
+	{
+		// Get the size of the allocation (number of pages)
+		uint32 page_index = (va - myEnv->rlimit) / PAGE_SIZE;
+        
+        // Find how many pages were allocated for the given virtual address
+        uint32 num_pages = 0;
+        while (page_allocation_status[page_index + num_pages] == 1) {
+            num_pages++;
+        }
 
-	// 	sys_free_user_mem(va , num_pages*PAGE_SIZE);
-	// }
+        // If the pages are allocated, free the pages
+        if (num_pages > 0) {
+            // Mark the pages as free
+            for (uint32 i = 0; i < num_pages; i++) {
+                page_allocation_status[page_index + i] = 0;
+            }
+            
+            // Call the system function to free the user memory and page file
+            sys_free_user_mem(va, num_pages * PAGE_SIZE);
+        } 
+    }
+	else {
+        panic("Invalid address: Address is not allocated.");
+    }
+	
 }
-
-
 //=================================
 // [4] ALLOCATE SHARED VARIABLE:
 //=================================
