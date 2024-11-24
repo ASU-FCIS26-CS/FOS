@@ -146,7 +146,7 @@ void env_page_ws_print(struct Env *e)
 		}
 		for (; i < e->page_WS_max_size; ++i)
 		{
-			cprintf("EMPTY LOCATION\n");
+			//cprintf("EMPTY LOCATION\n");
 		}
 	}
 }
@@ -233,7 +233,7 @@ void env_page_ws_print(struct Env *e)
 		{
 			if (e->ptr_pageWorkingSet[i].empty)
 			{
-				cprintf("EMPTY LOCATION");
+				//cprintf("EMPTY LOCATION");
 				if(i==e->page_last_WS_index )
 				{
 					cprintf("		<--");
@@ -275,7 +275,7 @@ void env_table_ws_print(struct Env *e)
 	{
 		if (e->__ptr_tws[i].empty)
 		{
-			cprintf("EMPTY LOCATION");
+		//	cprintf("EMPTY LOCATION");
 			if(i==e->table_last_WS_index )
 			{
 				cprintf("		<--");

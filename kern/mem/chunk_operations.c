@@ -184,33 +184,75 @@ void* sys_sbrk(int numOfPages)
 //=====================================
 // 1) ALLOCATE USER MEMORY:
 //=====================================
+// void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
+// {
+// 	/*====================================*/
+// 	/*Remove this line before start coding*/
+// //	inctst();
+// //	return;
+// 	/*====================================*/
+
+// 	//TODO: [PROJECT'24.MS2 - #13] [3] USER HEAP [KERNEL SIDE] - allocate_user_mem()
+// 	// Write your code here, remove the panic and write your code
+// 	panic("allocate_user_mem() is not implemented yet...!!");
+// }
+
 void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
-	/*====================================*/
-	/*Remove this line before start coding*/
-//	inctst();
-//	return;
-	/*====================================*/
+	// Rounding size & staring address to boundaries
+	uint32 roundingSize = ROUNDUP (size , PAGE_SIZE );
+	uint32 roundingVirtAddress = ROUNDDOWN (virtual_address , PAGE_SIZE );
+	uint32 endVirtualAddress = roundingVirtAddress + roundingSize ;
 
-	//TODO: [PROJECT'24.MS2 - #13] [3] USER HEAP [KERNEL SIDE] - allocate_user_mem()
-	// Write your code here, remove the panic and write your code
-	panic("allocate_user_mem() is not implemented yet...!!");
+    // Iterate through each page in the range
+    for (uint32 i = roundingVirtAddress ; i < endVirtualAddress ; i += PAGE_SIZE)
+    {
+        // Check if the page table exists
+		uint32* pageTable= NULL;
+        get_page_table(e->env_page_directory , i , &pageTable);
+
+        // create page table if not exist
+        if (pageTable == NULL)
+        {
+            create_page_table( e->env_page_directory , i );
+        }
+		
+
+        // mark the page to be allocated
+        pt_set_page_permissions(e->env_page_directory, i , PERM_AVAILABLE, 0);
+    }
 }
+
+
 
 //=====================================
 // 2) FREE USER MEMORY:
 //=====================================
 void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
-	/*====================================*/
-	/*Remove this line before start coding*/
-//	inctst();
-//	return;
-	/*====================================*/
-
 	//TODO: [PROJECT'24.MS2 - #15] [3] USER HEAP [KERNEL SIDE] - free_user_mem
 	// Write your code here, remove the panic and write your code
-	panic("free_user_mem() is not implemented yet...!!");
+	//panic("free_user_mem() is not implemented yet...!!");
+
+	uint32 roundingSize = ROUNDUP (size , PAGE_SIZE );
+	uint32 roundingVirtAddress = ROUNDDOWN (virtual_address , PAGE_SIZE );
+	uint32 endVirtualAddress = roundingVirtAddress + roundingSize ;
+
+	 for (uint32 i = roundingVirtAddress ; i < endVirtualAddress ; i += PAGE_SIZE)
+    {	
+		//unMaping frame for this address
+		unmap_frame(e->env_page_directory , i );
+
+		// umMark the page for this address
+		pt_set_page_permissions(e->env_page_directory, i , 0 ,  PERM_AVAILABLE );
+
+		//Remove an existing environment page from the page file
+		pf_remove_env_page(e , i);
+
+		//Flush certain Virtual Address from Working Set
+		env_page_ws_invalidate(e,i);
+
+	}
 
 
 	//TODO: [PROJECT'24.MS2 - BONUS#3] [3] USER HEAP [KERNEL SIDE] - O(1) free_user_mem
