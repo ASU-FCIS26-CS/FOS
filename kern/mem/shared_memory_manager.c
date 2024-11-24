@@ -97,9 +97,37 @@ struct Share* get_share(int32 ownerID, char* name)
 {
 	//TODO: [PROJECT'24.MS2 - #17] [4] SHARED MEMORY - get_share()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("get_share is not implemented yet");
+	//panic("get_share is not implemented yet");
 	//Your Code is Here...
+    acquire_spinlock(&AllShares.shareslock);
+	
+    struct Share *desiredObject;
+	struct Share *currentOb = LIST_LAST(&AllShares.shares_list);
+	int SListSize = LIST_SIZE(&AllShares.shares_list);
+	bool found = 0;
+    
+	for(int i = 0;i < SListSize;i++)
+	{
+		if((currentOb->name) == name && (currentOb->ownerID) == ownerID)
+		{
+			found = 1;
+			desiredObject = currentOb;
+			break;
+		}
+		currentOb = LIST_NEXT(currentOb);
+		i++;
+	}
+    
+    release_spinlock(&AllShares.shareslock);
 
+	if(found)
+	{
+		return desiredObject;
+	}
+	else
+	{
+		return NULL;
+	} 
 }
 
 //=========================
@@ -109,10 +137,62 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 {
 	//TODO: [PROJECT'24.MS2 - #19] [4] SHARED MEMORY [KERNEL SIDE] - createSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("createSharedObject is not implemented yet");
+	//panic("createSharedObject is not implemented yet");
 	//Your Code is Here...
 
 	struct Env* myenv = get_cpu_proc(); //The calling environment
+    
+	struct Share *isObjectExist = get_share(ownerID,shareName);
+	if(isObjectExist == NULL)
+	{
+		uint32 totalSpace = (uint32)virtual_address + size;
+		uint32 endOfObject = ROUNDUP(totalSpace,PAGE_SIZE);
+		struct Share *new_object = create_share(ownerID,shareName,size,isWritable);
+
+		//check if the object created and allocated successfuly
+		if(new_object != NULL)
+		{
+			int frameIndex = 0;
+			for(uint32 currentV = (uint32)virtual_address; currentV < endOfObject ;currentV += PAGE_SIZE)
+			{
+				struct FrameInfo *objectFrame = NULL;
+				int check =  allocate_frame(&(objectFrame));
+				if(check == E_NO_MEM)
+				{
+					panic("There is no enough memory!");
+				}
+                
+				//map each VA to frame and add the frame to framesStorage array
+				map_frame((myenv->env_page_directory),objectFrame,currentV,PERM_USER | PERM_WRITEABLE);
+				new_object->framesStorage[frameIndex] = objectFrame;
+				frameIndex++;
+			}
+			int32 objectID = (int32)virtual_address & 0x7fffffff ;
+			new_object->ID = objectID;
+			new_object->isWritable = isWritable;
+			new_object->ownerID = ownerID;
+			new_object->size = size;
+			new_object->references = 0;
+			strcpy((new_object->name),shareName);
+			
+			//add the new object to the shared list
+			acquire_spinlock(&AllShares.shareslock);
+			LIST_INSERT_TAIL(&(AllShares.shares_list),new_object);
+			release_spinlock(&AllShares.shareslock);
+
+			return objectID;
+		}
+
+		else
+		{
+			return E_NO_SHARE;
+		} 
+	}
+
+	else
+	{
+		return E_SHARED_MEM_EXISTS;
+	}
 }
 
 
