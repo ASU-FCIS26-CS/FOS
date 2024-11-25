@@ -120,7 +120,7 @@ void free(void* virtual_address)
 		// uint32 page_index = (va - myEnv->rlimit) / PAGE_SIZE;
 		uint32 page_index = (va - USER_HEAP_START) / PAGE_SIZE;
 
-        
+
         // Find how many pages were allocated for the given virtual address
         uint32 num_pages = 0;
         while (page_allocation_status[page_index + num_pages] == page_index) {
@@ -133,15 +133,15 @@ void free(void* virtual_address)
             for (uint32 i = 0; i < num_pages; i++) {
                 page_allocation_status[page_index + i] = 0;
             }
-            
+
             // Call the system function to free the user memory and page file
             sys_free_user_mem(va, num_pages * PAGE_SIZE);
-        } 
+        }
     }
 	else {
         panic("Invalid address: Address is not allocated.");
     }
-	
+
 }
 //=================================
 // [4] ALLOCATE SHARED VARIABLE:
@@ -159,6 +159,7 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
         // Page Allocator for larger allocations
 
         uint32 required_size = num_pages * PAGE_SIZE;         // Total required size in bytes
+
         // First-Fit Strategy
 		for (uint32 addr = myEnv->rlimit+PAGE_SIZE; addr + required_size <= USER_HEAP_MAX - PAGE_SIZE; addr += PAGE_SIZE)
         {
@@ -185,7 +186,12 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
                     page_allocation_status[index + i] = index;
                 }
 
-                sys_createSharedObject(sharedVarName,required_size,isWritable,(void*)addr);
+                uint32 sharedObjId = sys_createSharedObject(sharedVarName,required_size,isWritable,(void*)addr);
+				if(sharedObjId == E_SHARED_MEM_EXISTS){
+					cprintf("exists\n");
+					return NULL;
+				}
+
                 return (void*)addr;
             }
         }
@@ -200,7 +206,10 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 	//TODO: [PROJECT'24.MS2 - #20] [4] SHARED MEMORY [USER SIDE] - sget()
 	// Write your code here, remove the panic and write your code
 	// panic("sget() is not implemented yet...!!");
-	return NULL;
+	//return NULL;
+
+
+
 }
 
 
