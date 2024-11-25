@@ -184,9 +184,6 @@ struct Env {
 	//2020
 	uint32 nPageIn, nPageOut, nNewPageAdded;
 	uint32 nClocks ;
-	uint32 start;
-	uint32 brk;
-	uint32 rlimit;
 
 };
 

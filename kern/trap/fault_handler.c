@@ -155,19 +155,17 @@ void fault_handler(struct Trapframe *tf)
 
 			            if(fault_va >= USER_LIMIT)
 						{
-			            	cprintf("I'm 1 \n");
+			            	//cprintf("I'm 1 \n");
 							env_exit();
 						}
 						else if((perms & PERM_PRESENT) && (!(perms & PERM_WRITEABLE)))
 						{
-			            	cprintf("I'm 2 \n");
-
+			            	//cprintf("I'm 2 \n");
 							env_exit();
 						}
 						else if((fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX) && (!(perms & PERM_AVAILABLE)))
 			            {
-			            	cprintf("I'm 3 \n");
-
+			            	//cprintf("I'm 3 \n");
 			                env_exit();
 			            }
 		/*============================================================================================*/
@@ -241,8 +239,8 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 #endif
 
 		//cprintf("I got here 1 \n");
-		cprintf("%d \n", wsSize);
-		cprintf("%d \n", (faulted_env->page_WS_max_size));
+		//cprintf("%d \n", wsSize);
+		//cprintf("%d \n", (faulted_env->page_WS_max_size));
 		//uint32 freePages = sys_calculate_free_frames();
 
 	if(wsSize < (faulted_env->page_WS_max_size))
@@ -268,9 +266,10 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 
 	                LIST_INSERT_TAIL(&faulted_env->page_WS_list, new_element);
 
-	                env_page_ws_print(faulted_env);
-					cprintf("Adding element: fault_va = 0x%x\n", fault_va);
-					cprintf("New working set size: %d\n", LIST_SIZE(&(faulted_env->page_WS_list)));
+	                /* Debugging Prints */
+	                //env_page_ws_print(faulted_env);
+					//cprintf("Adding element: fault_va = 0x%x\n", fault_va);
+					//cprintf("New working set size: %d\n", LIST_SIZE(&(faulted_env->page_WS_list)));
 					//cprintf("fault size: %d\n", (sys_calculate_free_frames()-freePages));
 
 					wsSize++;
