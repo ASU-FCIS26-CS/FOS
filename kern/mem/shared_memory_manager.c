@@ -66,8 +66,20 @@ inline struct FrameInfo** create_frames_storage(int numOfFrames)
 {
 	//TODO: [PROJECT'24.MS2 - #16] [4] SHARED MEMORY - create_frames_storage()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("create_frames_storage is not implemented yet");
+	//panic("create_frames_storage is not implemented yet");
 	//Your Code is Here...
+
+	if(numOfFrames <= 0){
+		return NULL;
+	}
+
+	struct FrameInfo** FramesArr = (struct FrameInfo**)kmalloc(sizeof(struct FrameInfo*)*numOfFrames);
+	// if allocation failed -> return NULL
+	if(FramesArr == NULL)
+			return NULL;
+	// initialize to zeros
+	memset(FramesArr, 0, sizeof(struct FrameInfo*)*numOfFrames);
+	return FramesArr;
 
 }
 
@@ -81,9 +93,39 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 {
 	//TODO: [PROJECT'24.MS2 - #16] [4] SHARED MEMORY - create_share()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("create_share is not implemented yet");
+	//panic("create_share is not implemented yet");
 	//Your Code is Here...
 
+	struct Share* newShare = (struct Share *)kmalloc(sizeof(struct Share));
+	if(newShare == NULL){
+		return NULL;
+	}
+	uint32 nameSize = sizeof(newShare->name);
+	if (sizeof(shareName) < nameSize)
+			nameSize = sizeof(shareName);
+	// setup data
+	newShare->ID = (int32)newShare & 0x7FFFFFFF; //address of object + masking the MSB (make it +ve)
+	newShare->ownerID = ownerID;
+	uint32 i;
+	for(i = 0; i < nameSize; i++){
+		(newShare->name)[i] = shareName[i];
+	}
+	// pad with null terminator
+	for(; i < sizeof(newShare->name); i++)
+		(newShare->name)[i] = '\0';
+	//
+	//strcpy((new_object->name),shareName); // not safe
+	newShare->size = size;
+	newShare->isWritable = isWritable;
+	newShare->references = 1;
+	newShare->framesStorage = create_frames_storage(ROUNDUP(size/PAGE_SIZE, PAGE_SIZE));
+	// if allocating frames failed -> return null
+	if(newShare->framesStorage == NULL){
+		kfree(newShare);
+		return NULL;
+	}
+
+	return newShare;
 }
 
 //=============================
@@ -97,9 +139,37 @@ struct Share* get_share(int32 ownerID, char* name)
 {
 	//TODO: [PROJECT'24.MS2 - #17] [4] SHARED MEMORY - get_share()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("get_share is not implemented yet");
+	//panic("get_share is not implemented yet");
 	//Your Code is Here...
+	acquire_spinlock(&AllShares.shareslock);
 
+	struct Share *desiredObject;
+	struct Share *currentOb = LIST_FIRST(&AllShares.shares_list);
+	int SListSize = LIST_SIZE(&AllShares.shares_list);
+	bool found = 0;
+
+	// traverse list and find shared object
+	for(int i = 0; i < SListSize;i++)
+	{
+		if((currentOb->name) == name && (currentOb->ownerID) == ownerID)
+		{
+			found = 1;
+			desiredObject = currentOb;
+			break;
+		}
+		currentOb = LIST_NEXT(currentOb);
+	}
+
+	release_spinlock(&AllShares.shareslock);
+
+	if(found)
+	{
+		return desiredObject;
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 //=========================
@@ -109,10 +179,56 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 {
 	//TODO: [PROJECT'24.MS2 - #19] [4] SHARED MEMORY [KERNEL SIDE] - createSharedObject()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("createSharedObject is not implemented yet");
+	//panic("createSharedObject is not implemented yet");
 	//Your Code is Here...
 
 	struct Env* myenv = get_cpu_proc(); //The calling environment
+
+	struct Share *isObjectExist = get_share(ownerID,shareName);
+	if(isObjectExist == NULL)
+	{
+		uint32 totalSpace = (uint32)virtual_address + size;
+		uint32 endOfObject = ROUNDUP(totalSpace,PAGE_SIZE);
+		struct Share *new_object = create_share(ownerID,shareName,size,isWritable);
+
+		//check if the object created and allocated successfully
+		if(new_object != NULL)
+		{
+			int frameIndex = 0;
+			for(uint32 currentV = (uint32)virtual_address; currentV < endOfObject; currentV += PAGE_SIZE)
+			{
+				struct FrameInfo *objectFrame = NULL;
+				int check =  allocate_frame(&(objectFrame));
+				if(check == E_NO_MEM)
+				{
+					panic("There is no enough memory!");
+				}
+
+				//map each VA to frame and add the frame to framesStorage array
+				map_frame((myenv->env_page_directory),objectFrame,currentV,PERM_USER | PERM_WRITEABLE);
+				new_object->framesStorage[frameIndex] = objectFrame;
+				frameIndex++;
+			}
+
+			//add the new object to the shared list
+			acquire_spinlock(&AllShares.shareslock);
+			LIST_INSERT_TAIL(&(AllShares.shares_list), new_object);
+			release_spinlock(&AllShares.shareslock);
+
+			return new_object->ID;
+		}
+
+		else
+		{
+			return E_NO_SHARE;
+		}
+	}
+
+	else
+	{
+		return E_SHARED_MEM_EXISTS;
+	}
+
 }
 
 
