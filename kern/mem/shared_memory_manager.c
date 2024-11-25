@@ -73,12 +73,14 @@ inline struct FrameInfo** create_frames_storage(int numOfFrames)
 		return NULL;
 	}
 
-	struct FrameInfo** FramesArr = (struct FrameInfo**)kmalloc(sizeof(struct FrameInfo*)*numOfFrames);
+	cprintf("numbers of frames:%d\n", numOfFrames);
+	struct FrameInfo** FramesArr = (struct FrameInfo**)kmalloc(sizeof(char)*numOfFrames);
+	
 	// if allocation failed -> return NULL
 	if(FramesArr == NULL)
 			return NULL;
 	// initialize to zeros
-	memset(FramesArr, 0, sizeof(struct FrameInfo*)*numOfFrames);
+	memset(FramesArr, 0, sizeof(char)*numOfFrames);
 	return FramesArr;
 
 }
@@ -189,6 +191,7 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 	{
 		uint32 totalSpace = (uint32)virtual_address + size;
 		uint32 endOfObject = ROUNDUP(totalSpace,PAGE_SIZE);
+		// uint32 endOfObject = (uint32)virtual_address + size;
 		struct Share *new_object = create_share(ownerID,shareName,size,isWritable);
 
 		//check if the object created and allocated successfully
@@ -209,6 +212,7 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 				new_object->framesStorage[frameIndex] = objectFrame;
 				frameIndex++;
 			}
+			cprintf("virtual_address%p , endOfObject:%p frameIndex:%d\n",virtual_address,endOfObject,frameIndex);
 
 			//add the new object to the shared list
 			acquire_spinlock(&AllShares.shareslock);
