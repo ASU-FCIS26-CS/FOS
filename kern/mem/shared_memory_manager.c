@@ -249,9 +249,9 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		while(count < numOfFrames)
 		{
 			sharedFrame = requestedObject->framesStorage[count];
-			VA += (count * PAGE_SIZE);
+			//VA += (count * PAGE_SIZE);
 			//map each page to each shared frame with the permission isWritable
-			map_frame((myenv->env_page_directory),sharedFrame,VA,PERM_USER | isWrit);
+			map_frame((myenv->env_page_directory), sharedFrame, VA+(count*PAGE_SIZE), PERM_USER | isWrit);
 			count++;
 		}
 
@@ -259,11 +259,9 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		requestedObject->references++;
 		return requestedObject->ID;
 	}
-	else
-	{
-		//return if the object is not exist
-		return E_SHARED_MEM_NOT_EXISTS;
-	}
+
+	//return if the object is does not exist
+	return E_SHARED_MEM_NOT_EXISTS;
 
 }
 

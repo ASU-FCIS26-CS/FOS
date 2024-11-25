@@ -155,46 +155,43 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	//TODO: [PROJECT'24.MS2 - #18] [4] SHARED MEMORY [USER SIDE] - smalloc()
 	// Write your code here, remove the panic and write your code
 	// panic("smalloc() is not implemented yet...!!");
-      uint32 num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to nearest page
-        // Page Allocator for larger allocations
+    uint32 num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to nearest page
 
-        uint32 required_size = num_pages * PAGE_SIZE;         // Total required size in bytes
+	// Page Allocator for larger allocations
+	uint32 required_size = num_pages * PAGE_SIZE;         // Total required size in bytes
+	// First-Fit Strategy
+	for (uint32 addr = myEnv->rlimit+PAGE_SIZE; addr + required_size <= USER_HEAP_MAX - PAGE_SIZE; addr += PAGE_SIZE)
+	{
+		uint32 index = (addr - USER_HEAP_START) / PAGE_SIZE;
+		uint8 is_free = 1;
+		// // Check if all pages in the range are free
+		for (uint32 i = 0; i < num_pages; i++)
+		{
+			if (page_allocation_status[index + i] != 0)
+			{
+				is_free = 0;
+				break;
+			}
+		}
+		// cprintf("addr: %p , pagestatus[idx] %d\n", addr, page_allocation_status[index]);
+		// if(page_allocation_status[index ] == 0 ) return (void*)addr;
+		if (is_free)
+		{
+			// Mark the pages as allocated
+			for (uint32 i = 0; i < num_pages; i++)
+			{
+				page_allocation_status[index + i] = index;
+			}
 
-        // First-Fit Strategy
-		for (uint32 addr = myEnv->rlimit+PAGE_SIZE; addr + required_size <= USER_HEAP_MAX - PAGE_SIZE; addr += PAGE_SIZE)
-        {
-            uint32 index = (addr - USER_HEAP_START) / PAGE_SIZE;
-            uint8 is_free = 1;
+			uint32 sharedObjId = sys_createSharedObject(sharedVarName,required_size,isWritable,(void*)addr);
+			if(sharedObjId == E_SHARED_MEM_EXISTS){
+				cprintf("exists\n");
+				return NULL;
+			}
 
-
-            // // Check if all pages in the range are free
-            for (uint32 i = 0; i < num_pages; i++)
-            {
-                if (page_allocation_status[index + i] != 0)
-                {
-                    is_free = 0;
-                    break;
-                }
-            }
-			// cprintf("addr: %p , pagestatus[idx] %d\n", addr, page_allocation_status[index]);
-			// if(page_allocation_status[index ] == 0 ) return (void*)addr;
-            if (is_free)
-            {
-                // Mark the pages as allocated
-                for (uint32 i = 0; i < num_pages; i++)
-                {
-                    page_allocation_status[index + i] = index;
-                }
-
-                uint32 sharedObjId = sys_createSharedObject(sharedVarName,required_size,isWritable,(void*)addr);
-				if(sharedObjId == E_SHARED_MEM_EXISTS){
-					cprintf("exists\n");
-					return NULL;
-				}
-
-                return (void*)addr;
-            }
-        }
+			return (void*)addr;
+		}
+	}
 	return NULL;
 }
 
@@ -208,7 +205,52 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 	// panic("sget() is not implemented yet...!!");
 	//return NULL;
 
+	// get obj size
+	uint32 size = sys_getSizeOfSharedObject(ownerEnvID, sharedVarName);
+	if(size == (uint32)NULL){
+		return NULL;
+	}
 
+	// find space in current process virtual memory
+	uint32 num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to nearest page
+	// Page Allocator for larger allocations
+	uint32 required_size = num_pages * PAGE_SIZE;         // Total required size in bytes
+	// First-Fit Strategy
+	for (uint32 addr = myEnv->rlimit+PAGE_SIZE; addr + required_size <= USER_HEAP_MAX - PAGE_SIZE; addr += PAGE_SIZE)
+	{
+		uint32 index = (addr - USER_HEAP_START) / PAGE_SIZE;
+		uint8 is_free = 1;
+		// // Check if all pages in the range are free
+		for (uint32 i = 0; i < num_pages; i++)
+		{
+			if (page_allocation_status[index + i] != 0)
+			{
+				is_free = 0;
+				break;
+			}
+		}
+		// cprintf("addr: %p , pagestatus[idx] %d\n", addr, page_allocation_status[index]);
+		// if(page_allocation_status[index ] == 0 ) return (void*)addr;
+		// found enough space in VM
+		if (is_free)
+		{
+			// Mark the pages as allocated
+			for (uint32 i = 0; i < num_pages; i++)
+			{
+				page_allocation_status[index + i] = index;
+			}
+
+			uint32 sharedObjId = sys_getSharedObject(ownerEnvID, sharedVarName, (void*)addr);
+			if(sharedObjId == E_SHARED_MEM_NOT_EXISTS){
+				return NULL;
+			}
+
+			return (void*)addr;
+		}
+	}
+
+	// If no space in vm
+	return NULL;
 
 }
 
