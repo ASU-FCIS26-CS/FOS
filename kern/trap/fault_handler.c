@@ -236,8 +236,8 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 #endif
 
 		//cprintf("I got here 1 \n");
-		cprintf("%d \n", wsSize);
-		cprintf("%d \n", (faulted_env->page_WS_max_size));
+		//cprintf("%d \n", wsSize);
+		//cprintf("%d \n", (faulted_env->page_WS_max_size));
 		//uint32 freePages = sys_calculate_free_frames();
 
 	if(wsSize < (faulted_env->page_WS_max_size))
