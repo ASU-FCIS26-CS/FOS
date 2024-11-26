@@ -194,7 +194,17 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 				int check =  allocate_frame(&(objectFrame));
 				if(check == E_NO_MEM)
 				{
-					panic("There is no enough memory!");
+					//panic("There is no enough memory!");
+					// free allocated frames
+					uint32 startVa = (uint32)virtual_address;
+					while(currentV >= startVa){
+						frameIndex--;
+						currentV-=PAGE_SIZE;
+						new_object->framesStorage[frameIndex] = NULL;
+						unmap_frame((myenv->env_page_directory), currentV);
+					}
+
+					return E_NO_SHARE;
 				}
 
 				//map each VA to frame and add the frame to framesStorage array
@@ -261,7 +271,7 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		return requestedObject->ID;
 	}
 
-	//return if the object is does not exist
+	//return if the object does not exist
 	return E_SHARED_MEM_NOT_EXISTS;
 
 }
