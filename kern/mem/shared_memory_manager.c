@@ -241,7 +241,9 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 	struct Share *requestedObject = get_share(ownerID,shareName);
 	if(requestedObject != NULL)
 	{
-		uint8 isWrit = requestedObject->isWritable;
+		uint8 isWrite = 0;
+		if(requestedObject->isWritable)
+			isWrite = PERM_WRITEABLE;
 		int count = 0;
 		struct FrameInfo *sharedFrame;
 		uint32 VA = (uint32)virtual_address;
@@ -249,9 +251,8 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 		while(count < numOfFrames)
 		{
 			sharedFrame = requestedObject->framesStorage[count];
-			//VA += (count * PAGE_SIZE);
 			//map each page to each shared frame with the permission isWritable
-			map_frame((myenv->env_page_directory), sharedFrame, VA+(count*PAGE_SIZE), PERM_USER | isWrit);
+			map_frame((myenv->env_page_directory), sharedFrame, VA+(count*PAGE_SIZE), PERM_USER | isWrite);
 			count++;
 		}
 
