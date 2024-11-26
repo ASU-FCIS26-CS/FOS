@@ -121,9 +121,16 @@ struct Env {
 
 	//=======================================================================
 	//TODO: [PROJECT'24.MS2 - #10] [3] USER HEAP - add suitable code here
+<<<<<<< HEAD
 	    uint32 start;
 	    uint32 brk;
 	    uint32 rlimit;
+=======
+	uint32 start;
+	uint32 brk;
+	uint32 rlimit;
+
+>>>>>>> main
 	//=======================================================================
 	//for page file management
 	uint32* disk_env_pgdir;
@@ -183,7 +190,10 @@ struct Env {
 	//2020
 	uint32 nPageIn, nPageOut, nNewPageAdded;
 	uint32 nClocks ;
+<<<<<<< HEAD
 	
+=======
+>>>>>>> main
 
 };
 

@@ -89,6 +89,7 @@ bool is_initialized = 0;
 //==================================
 void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpace)
 {
+	// cprintf("enter intialize dynamic allocator\n");
 	//==================================================================================
 	// DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
@@ -101,13 +102,13 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	}
 	//==================================================================================
 	//==================================================================================
-
 	uint32 *stAdress = (uint32 *)daStart;
 	uint32 *edAdress = (uint32 *)(daStart + initSizeOfAllocatedSpace - sizeof(uint32));
 
 	*stAdress =  1;
 	*edAdress = 1;
 
+	// cprintf("enter dynamic allocator\n");
 	uint32 totalSize = initSizeOfAllocatedSpace - 2 * sizeof(uint32);
 
 	uint32 *first_free_block = (uint32 *)(stAdress + 1);
@@ -119,6 +120,7 @@ void initialize_dynamic_allocator(uint32 daStart, uint32 initSizeOfAllocatedSpac
 	LIST_INIT(&freeBlocksList);
 	struct BlockElement *freeBlock = (struct BlockElement *)(first_free_block + 1);
 	LIST_INSERT_HEAD(&freeBlocksList, freeBlock);
+	// cprintf("left intialize block\n");
 }
 //==================================
 // [2] SET BLOCK HEADER & FOOTER:
@@ -144,6 +146,9 @@ void set_block_data(void *va, uint32 totalSize, bool isAllocated)
 void *alloc_block_FF(uint32 size)
 {
 
+	// cprintf("in alloc_block_FF\n");
+	int x = 0 ;
+	// cprintf("checkpoint %d\n", ++x);
 		//==================================================================================
 	// DON'T CHANGE THESE LINES==========================================================
 	//==================================================================================
@@ -155,11 +160,17 @@ void *alloc_block_FF(uint32 size)
 		size = DYN_ALLOC_MIN_BLOCK_SIZE;
 	if (!is_initialized)
 	{
+		// cprintf("entered initialization\n");
 		uint32 required_size = size + 2 * sizeof(int) + 2 * sizeof(int);
 		uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE) / PAGE_SIZE);
 		uint32 da_break = (uint32)sbrk(0);
+	    // cprintf("start: %p , da_break: %p\n", da_start, da_break);  
 		initialize_dynamic_allocator(da_start, da_break - da_start);
+		// cprintf("left initialization\n");
+
 	}
+
+	// cprintf("checkpoint %d\n", ++x);
 
 	//==================================================================================
 	//==================================================================================
@@ -173,12 +184,15 @@ void *alloc_block_FF(uint32 size)
 
 		uint32 effectiveSize = size + 8;
 		struct BlockElement *blk;
+		// cprintf("checkpoint %d\n", ++x);
+
 		LIST_FOREACH(blk, &freeBlocksList)
-		{
+		{	
 
 			uint32 blkSize = get_block_size(blk);
 			if (blkSize >= effectiveSize){
 
+				// cprintf("checkpoint %d\n", ++x);
 
 				if(blkSize - effectiveSize >= 16){
                     struct BlockElement *newFreeBlock = (struct BlockElement *)((char *)blk + effectiveSize );
@@ -191,11 +205,13 @@ void *alloc_block_FF(uint32 size)
 				}
                     set_block_data(blk,effectiveSize,1);
                     LIST_REMOVE(&freeBlocksList, blk);
+					// cprintf("returned blk :%p\n",blk);
                     return (void *)((char *)blk  );
 
 			}
 		}
 
+		// cprintf(" sbrk called\n");
 		int pages = (effectiveSize - 1 + PAGE_SIZE) / PAGE_SIZE;
 		void *ret = sbrk(pages);
 		if (ret == (void*)-1)

@@ -161,13 +161,19 @@ void fault_handler(struct Trapframe *tf)
 						else if((perms & PERM_PRESENT) && (!(perms & PERM_WRITEABLE)))
 						{
 			            	//cprintf("I'm 2 \n");
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 							env_exit();
 						}
 						else if((fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX) && (!(perms & PERM_AVAILABLE)))
 			            {
 			            	//cprintf("I'm 3 \n");
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 			                env_exit();
 			            }
 		/*============================================================================================*/
@@ -268,7 +274,12 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 
 	                LIST_INSERT_TAIL(&faulted_env->page_WS_list, new_element);
 
+<<<<<<< HEAD
 	                env_page_ws_print(faulted_env);
+=======
+	                /* Debugging Prints */
+	                //env_page_ws_print(faulted_env);
+>>>>>>> main
 					//cprintf("Adding element: fault_va = 0x%x\n", fault_va);
 					//cprintf("New working set size: %d\n", LIST_SIZE(&(faulted_env->page_WS_list)));
 					//cprintf("fault size: %d\n", (sys_calculate_free_frames()-freePages));
