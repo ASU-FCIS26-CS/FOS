@@ -164,7 +164,7 @@ void *alloc_block_FF(uint32 size)
 		uint32 required_size = size + 2 * sizeof(int) + 2 * sizeof(int);
 		uint32 da_start = (uint32)sbrk(ROUNDUP(required_size, PAGE_SIZE) / PAGE_SIZE);
 		uint32 da_break = (uint32)sbrk(0);
-	    // cprintf("start: %p , da_break: %p\n", da_start, da_break);  
+	    // cprintf("start: %p , da_break: %p\n", da_start, da_break);
 		initialize_dynamic_allocator(da_start, da_break - da_start);
 		// cprintf("left initialization\n");
 
@@ -187,7 +187,7 @@ void *alloc_block_FF(uint32 size)
 		// cprintf("checkpoint %d\n", ++x);
 
 		LIST_FOREACH(blk, &freeBlocksList)
-		{	
+		{
 
 			uint32 blkSize = get_block_size(blk);
 			if (blkSize >= effectiveSize){
