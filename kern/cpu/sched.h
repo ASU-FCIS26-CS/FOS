@@ -60,6 +60,7 @@ struct
 #define PRI_MIN 0
 #define PRI_MAX 63
 int64 ticks;
+int64 strv;
 int64 timer_ticks() ;
 /********* for BSD Priority Scheduler *************/
 

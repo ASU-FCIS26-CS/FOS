@@ -507,6 +507,9 @@ void sys_bypassPageFault(uint8 instrLength)
 }
 
 
+void sys_env_set_priority(int envID, int priority){
+	env_set_priority(envID,priority);
+}
 /**************************************************************************/
 /************************* SYSTEM CALLS HANDLER ***************************/
 /**************************************************************************/
