@@ -77,7 +77,7 @@ void wakeup_one(struct Channel *chan)
 	        // clear the channel pointer as it's no longer blocked on it
 	        env->channel = NULL;
 	        // insert process into ready queue
-	        sched_insert_ready0(env);
+	        sched_insert_ready(env);
 	}
 	release_spinlock(&(ProcessQueues.qlock));
 }
