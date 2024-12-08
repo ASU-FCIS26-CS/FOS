@@ -707,7 +707,7 @@ void env_set_priority(int envID, int priority)
 
 	struct Env* proc ;
 	envid2env(envID, &proc, 0);
-	
+
 	acquire_spinlock(&(ProcessQueues.qlock)); 	//CS on Qs
 
 	//Your code is here

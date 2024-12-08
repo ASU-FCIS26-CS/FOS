@@ -52,6 +52,7 @@ int command_kill_all(int number_of_arguments, char **arguments);
 int command_writeusermem(int number_of_arguments, char **arguments);
 int command_readusermem(int number_of_arguments, char **arguments);
 int command_readuserblock(int number_of_arguments, char **arguments);
+int command_schedPRIRR(int number_of_arguments, char **arguments);
 int command_remove_table(int number_of_arguments, char **arguments);
 int command_allocuserpage(int number_of_arguments, char **arguments);
 int command_meminfo(int number_of_arguments, char **arguments);
