@@ -396,12 +396,14 @@ void clock_interrupt_handler(struct Trapframe* tf)
 		for(int i = 1; i < num_of_ready_queues; i++){
 			acquire_spinlock(&ProcessQueues.qlock);
 			LIST_FOREACH(currEnv, &(ProcessQueues.env_ready_queues[i])){
+				currEnv->nStarv++;
 				// if process exceeds starvation threshold
-				if(timer_ticks() - currEnv->nClocks > strv){
+				if(currEnv->nStarv > strv){
 					// remove from current prio queue
 					remove_from_queue(&(ProcessQueues.env_ready_queues[i]), currEnv);
 					// promote prio
 					currEnv->priority--;
+					currEnv->nStarv = 0;
 					// add to new prio queue
 					enqueue(&(ProcessQueues.env_ready_queues[i-1]), currEnv);
 				}
