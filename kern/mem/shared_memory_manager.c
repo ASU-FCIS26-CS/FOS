@@ -144,37 +144,6 @@ struct Share* get_share(int32 ownerID, char* name)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("get_share is not implemented yet");
 	//Your Code is Here...
-<<<<<<< HEAD
-    acquire_spinlock(&AllShares.shareslock);
-	
-    struct Share *desiredObject;
-	struct Share *currentOb = LIST_LAST(&AllShares.shares_list);
-	int SListSize = LIST_SIZE(&AllShares.shares_list);
-	bool found = 0;
-    
-	for(int i = 0;i < SListSize;i++)
-	{
-		if((currentOb->name) == name && (currentOb->ownerID) == ownerID)
-		{
-			found = 1;
-			desiredObject = currentOb;
-			break;
-		}
-		currentOb = LIST_NEXT(currentOb);
-		i++;
-	}
-    
-    release_spinlock(&AllShares.shareslock);
-
-	if(found)
-	{
-		return desiredObject;
-	}
-	else
-	{
-		return NULL;
-	} 
-=======
 	acquire_spinlock(&AllShares.shareslock);
 
 	struct Share *desiredObject = NULL;
@@ -191,7 +160,6 @@ struct Share* get_share(int32 ownerID, char* name)
 	release_spinlock(&AllShares.shareslock);
 
 	return desiredObject;
->>>>>>> fb332c471e4267bcfdc4539bc132eb06891c5b89
 }
 
 //=========================
@@ -205,28 +173,14 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 	//Your Code is Here...
 
 	struct Env* myenv = get_cpu_proc(); //The calling environment
-<<<<<<< HEAD
-    
-	struct Share *isObjectExist = get_share(ownerID,shareName);
-=======
 
 	struct Share *isObjectExist = get_share(ownerID,shareName);
 	//cprintf("Owner with ID %d want to create obj with name: %s\n", ownerID, shareName);
 	//cprintf("\n Object value: %x\n", isObjectExist);
->>>>>>> fb332c471e4267bcfdc4539bc132eb06891c5b89
 	if(isObjectExist == NULL)
 	{
 		uint32 totalSpace = (uint32)virtual_address + size;
 		uint32 endOfObject = ROUNDUP(totalSpace,PAGE_SIZE);
-<<<<<<< HEAD
-		struct Share *new_object = create_share(ownerID,shareName,size,isWritable);
-
-		//check if the object created and allocated successfuly
-		if(new_object != NULL)
-		{
-			int frameIndex = 0;
-			for(uint32 currentV = (uint32)virtual_address; currentV < endOfObject ;currentV += PAGE_SIZE)
-=======
 		// uint32 endOfObject = (uint32)virtual_address + size;
 		struct Share *new_object = create_share(ownerID,shareName,size,isWritable);
 
@@ -235,17 +189,11 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 		{
 			int frameIndex = 0;
 			for(uint32 currentV = (uint32)virtual_address; currentV < endOfObject; currentV += PAGE_SIZE)
->>>>>>> fb332c471e4267bcfdc4539bc132eb06891c5b89
 			{
 				struct FrameInfo *objectFrame = NULL;
 				int check =  allocate_frame(&(objectFrame));
 				if(check == E_NO_MEM)
 				{
-<<<<<<< HEAD
-					panic("There is no enough memory!");
-				}
-                
-=======
 					//panic("There is no enough memory!");
 					// free allocated frames
 					uint32 startVa = (uint32)virtual_address;
@@ -259,28 +207,11 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 					return E_NO_SHARE;
 				}
 
->>>>>>> fb332c471e4267bcfdc4539bc132eb06891c5b89
 				//map each VA to frame and add the frame to framesStorage array
 				map_frame((myenv->env_page_directory),objectFrame,currentV,PERM_USER | PERM_WRITEABLE);
 				new_object->framesStorage[frameIndex] = objectFrame;
 				frameIndex++;
 			}
-<<<<<<< HEAD
-			int32 objectID = (int32)virtual_address & 0x7fffffff ;
-			new_object->ID = objectID;
-			new_object->isWritable = isWritable;
-			new_object->ownerID = ownerID;
-			new_object->size = size;
-			new_object->references = 0;
-			strcpy((new_object->name),shareName);
-			
-			//add the new object to the shared list
-			acquire_spinlock(&AllShares.shareslock);
-			LIST_INSERT_TAIL(&(AllShares.shares_list),new_object);
-			release_spinlock(&AllShares.shareslock);
-
-			return objectID;
-=======
 			//cprintf("virtual_address%p , endOfObject:%p frameIndex:%d\n",virtual_address,endOfObject,frameIndex);
 
 			//add the new object to the shared list
@@ -289,27 +220,19 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 			release_spinlock(&(AllShares.shareslock));
 
 			return new_object->ID;
->>>>>>> fb332c471e4267bcfdc4539bc132eb06891c5b89
 		}
 
 		else
 		{
 			return E_NO_SHARE;
-<<<<<<< HEAD
-		} 
-=======
 		}
->>>>>>> fb332c471e4267bcfdc4539bc132eb06891c5b89
 	}
 
 	else
 	{
 		return E_SHARED_MEM_EXISTS;
 	}
-<<<<<<< HEAD
-=======
 
->>>>>>> fb332c471e4267bcfdc4539bc132eb06891c5b89
 }
 
 

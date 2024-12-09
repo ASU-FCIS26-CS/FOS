@@ -148,7 +148,7 @@ void* sys_sbrk(int numOfPages)
 		return (void*) env->brk;
 	}
 	else if(numOfPages>0){
-		
+
 		uint32 oldBrk = env->brk;
 		char* newBrk = (char*)oldBrk ;
 
@@ -164,7 +164,7 @@ void* sys_sbrk(int numOfPages)
 		uint32 moving_address = env-> start;
 		while (moving_address <(int32)newBrk )
 		{
-			
+
 			// cprintf("setting permission\n");
 	  		 uint32* page_table;
        		 // Check if the page table exists
@@ -179,8 +179,8 @@ void* sys_sbrk(int numOfPages)
 
 			// Set the page permissions to mark the page as allocated
 			pt_set_page_permissions(env->env_page_directory, moving_address, PERM_AVAILABLE, 0);
-			moving_address+=PAGE_SIZE; 
-		}  
+			moving_address+=PAGE_SIZE;
+		}
 		// update the brk in the current environment
         env->brk = (int32)newBrk;
 
@@ -196,8 +196,8 @@ void* sys_sbrk(int numOfPages)
 		}
 		uint32 moving_address = (uint32)env->brk;
 		while(moving_address >=(uint32)new_brk){
-			
-				unmap_frame(env->env_page_directory , moving_address); 
+
+				unmap_frame(env->env_page_directory , moving_address);
 
 				// umMark the page for this address
 				pt_set_page_permissions(env->env_page_directory, moving_address , 0 ,  PERM_AVAILABLE );
@@ -210,14 +210,14 @@ void* sys_sbrk(int numOfPages)
 	    env->brk = (int)new_brk;
 		return (void *)brk;
 	}
-	
+
 	return NULL;
 
 	if(numOfPages==0) {
 		return (void*) env->brk;
 	}
 	else if(numOfPages>0){
-		
+
 		uint32 oldBrk = brk;
 		char* newBrk = (char*)brk ;
 
@@ -244,7 +244,7 @@ void* sys_sbrk(int numOfPages)
 	    env->brk = (int)new_brk;
 		return (void *)brk;
 	}
-	
+
 	return NULL;
 
 
@@ -253,30 +253,57 @@ void* sys_sbrk(int numOfPages)
 //=====================================
 // 1) ALLOCATE USER MEMORY:
 //=====================================
+//void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
+//{
+//    // Align the starting address and size to page boundaries
+//    uint32 aligned_va = ROUNDDOWN(virtual_address, PAGE_SIZE);
+//    uint32 aligned_size = ROUNDUP(size, PAGE_SIZE);
+//    uint32 end_va = aligned_va + aligned_size;
+//
+//    // Iterate through each page in the range
+//    for (uint32 va = aligned_va; va < end_va; va += PAGE_SIZE)
+//    {
+//        uint32* page_table;
+//        // Check if the page table exists
+//        int ret = get_page_table(e->env_page_directory, va, &page_table);
+//
+//        // If the page table doesn't exist, create it
+//        if (ret != TABLE_IN_MEMORY)
+//        {
+//            create_page_table(e->env_page_directory, va);
+//        }
+//
+//        // Set the page permissions to mark the page as allocated
+//        pt_set_page_permissions(e->env_page_directory, va, PERM_AVAILABLE, 0);
+//    }
+//}
+
 void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 {
-    // Align the starting address and size to page boundaries
-    uint32 aligned_va = ROUNDDOWN(virtual_address, PAGE_SIZE);
-    uint32 aligned_size = ROUNDUP(size, PAGE_SIZE);
-    uint32 end_va = aligned_va + aligned_size;
+	// Rounding size & staring address to boundaries
+	uint32 roundingSize = ROUNDUP (size , PAGE_SIZE );
+	uint32 roundingVirtAddress = ROUNDDOWN (virtual_address , PAGE_SIZE );
+	uint32 endVirtualAddress = roundingVirtAddress + roundingSize ;
 
     // Iterate through each page in the range
-    for (uint32 va = aligned_va; va < end_va; va += PAGE_SIZE)
+    for (uint32 i = roundingVirtAddress ; i < endVirtualAddress ; i += PAGE_SIZE)
     {
-        uint32* page_table;
         // Check if the page table exists
-        int ret = get_page_table(e->env_page_directory, va, &page_table);
+		uint32* pageTable= NULL;
+        get_page_table(e->env_page_directory , i , &pageTable);
 
-        // If the page table doesn't exist, create it
-        if (ret != TABLE_IN_MEMORY)
+        // create page table if not exist
+        if (pageTable == NULL)
         {
-            create_page_table(e->env_page_directory, va);
+            create_page_table( e->env_page_directory , i );
         }
 
-        // Set the page permissions to mark the page as allocated
-        pt_set_page_permissions(e->env_page_directory, va, PERM_AVAILABLE, 0);
+
+        // mark the page to be allocated
+        pt_set_page_permissions(e->env_page_directory, i , PERM_AVAILABLE, 0);
     }
 }
+
 // void allocate_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 // {
 // 	/*====================================*/
@@ -306,7 +333,7 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	uint32 endVirtualAddress = roundingVirtAddress + roundingSize ;
 
 	 for (uint32 i = roundingVirtAddress ; i < endVirtualAddress ; i += PAGE_SIZE)
-    {	
+    {
 		//unMaping frame for this address
 		unmap_frame(e->env_page_directory , i );
 
