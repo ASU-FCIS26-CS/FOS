@@ -2,7 +2,8 @@
 #define FOS_INC_SYSCALL_H
 
 /* system call numbers */
-enum {
+enum
+{
     SYS_cputs = 0,
     SYS_cputc,
     SYS_cgetc,
@@ -52,7 +53,19 @@ enum {
     SYS_free_user_mem,
     SYS_allocate_user_mem,
     //=====================================================================
-    NSYSCALLS
+    NSYSCALLS,
+
+    //==============================================================================================================================
+    
+    SYS_init_queue,
+    SYS_enqeue,
+    SYS_deqeue,
+    SYS_remove_from_queue,
+    SYS_acquire_spin_lock,
+    SYS_release_spin_lock,
+    SYS_sched_insert_ready,
+    SYS_sched_remove_ready
+
 };
 
 #endif /* !FOS_INC_SYSCALL_H */
