@@ -84,7 +84,15 @@ void 	sys_set_uheap_strategy(uint32 heapStrategy);
 int 	sys_pf_calculate_allocated_pages(void);
 
 //Semaphores
-
+void sys_init_queue (struct Env_Queue *queue);
+void sys_enqeue (struct Env_Queue *queue,struct Env *env);
+struct Env * sys_deqeue (struct Env_Queue *queue);
+// void sys_acquire_spin_lock (struct semaphore *sem);
+void sys_acquire_spin_lock ();
+void sys_release_spin_lock ();
+void sys_sched_insert_ready(struct Env *env);
+void sys_sched_remove_ready(struct Env *env);
+// void sys_acquire_spin_lock (struct spinlock *lk);
 
 //Sharing
 //2017

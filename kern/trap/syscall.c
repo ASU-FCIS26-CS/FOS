@@ -19,8 +19,8 @@
 #include <kern/tests/utilities.h>
 #include <kern/tests/test_working_set.h>
 
-extern uint8 bypassInstrLength ;
-struct Env* cur_env ;
+extern uint8 bypassInstrLength;
+struct Env *cur_env;
 /*******************************/
 /* STRING I/O SYSTEM CALLS */
 /*******************************/
@@ -30,8 +30,8 @@ struct Env* cur_env ;
 // Destroys the environment on memory errors.
 static void sys_cputs(const char *s, uint32 len, uint8 printProgName)
 {
-	//2024 - better to use locks instead (to support multiprocessors)
-	pushcli();	//disable interrupts
+	// 2024 - better to use locks instead (to support multiprocessors)
+	pushcli(); // disable interrupts
 	{
 		// Check that the user has permission to read memory [s, s+len).
 		// Destroy the environment if not.
@@ -40,20 +40,18 @@ static void sys_cputs(const char *s, uint32 len, uint8 printProgName)
 
 		// Print the string supplied by the user.
 		if (printProgName)
-			cprintf("[%s %d] ",cur_env->prog_name, cur_env->env_id);
-		cprintf("%.*s",len, s);
+			cprintf("[%s %d] ", cur_env->prog_name, cur_env->env_id);
+		cprintf("%.*s", len, s);
 	}
-	popcli();	//enable interrupts
+	popcli(); // enable interrupts
 }
-
 
 // Print a char to the system console.
 static void sys_cputc(const char c)
 {
 	// Print the char supplied by the user.
-	cprintf("%c",c);
+	cprintf("%c", c);
 }
-
 
 // Read a character from the system console.
 // Returns the character.
@@ -68,7 +66,7 @@ sys_cgetc(void)
 		// The cons_getc2() primitive doesn't wait for a character
 		while ((c = cons_getc2()) == 0)
 		{
-			//should sleep (i.e. blocked) until a IRQ1 (KB) interrupt occur
+			// should sleep (i.e. blocked) until a IRQ1 (KB) interrupt occur
 			if (KBD_INT_BLK_METHOD == LCK_SLEEP)
 			{
 				acquire_spinlock(&KBDlock);
@@ -83,28 +81,28 @@ sys_cgetc(void)
 			}
 		}
 	}
-	else	/*Programmed I/O*/
+	else /*Programmed I/O*/
 	{
-		//cprintf("\n(((((((Programmed I/O))))))\n");
-		// The cons_getc() primitive doesn't wait for a character,
-		// but the sys_cgetc() system call does.
+		// cprintf("\n(((((((Programmed I/O))))))\n");
+		//  The cons_getc() primitive doesn't wait for a character,
+		//  but the sys_cgetc() system call does.
 		while ((c = cons_getc()) == 0)
 		{
-			//cprintf("do nothing\n");
+			// cprintf("do nothing\n");
 			/* do nothing */;
 		}
 	}
-	//cprintf("\nCHAR %d is READ from KB, IEN = %d\n", c, read_eflags() & FL_IF);
+	// cprintf("\nCHAR %d is READ from KB, IEN = %d\n", c, read_eflags() & FL_IF);
 
 	return c;
 }
 
-//Lock the console so that no other processes can read from KB or output to the monitor
+// Lock the console so that no other processes can read from KB or output to the monitor
 void sys_lock_cons(void)
 {
 	cons_lock();
 }
-//Unlock the console so that other processes can read from KB or output to the monitor
+// Unlock the console so that other processes can read from KB or output to the monitor
 void sys_unlock_cons(void)
 {
 	cons_unlock();
@@ -141,39 +139,38 @@ static int __sys_allocate_page(void *va, int perm)
 	int r;
 	struct Env *e = cur_env;
 
-	//if ((r = envid2env(envid, &e, 1)) < 0)
-	//return r;
+	// if ((r = envid2env(envid, &e, 1)) < 0)
+	// return r;
 
-	struct FrameInfo *ptr_frame_info ;
-	r = allocate_frame(&ptr_frame_info) ;
+	struct FrameInfo *ptr_frame_info;
+	r = allocate_frame(&ptr_frame_info);
 	if (r == E_NO_MEM)
-		return r ;
+		return r;
 
-	//check virtual address to be paged_aligned and < USER_TOP
+	// check virtual address to be paged_aligned and < USER_TOP
 	if ((uint32)va >= USER_TOP || (uint32)va % PAGE_SIZE != 0)
 		return E_INVAL;
 
-	//check permissions to be appropriate
+	// check permissions to be appropriate
 	if ((perm & (~PERM_AVAILABLE & ~PERM_WRITEABLE)) != (PERM_USER))
 		return E_INVAL;
 
-
-	uint32 physical_address = to_physical_address(ptr_frame_info) ;
+	uint32 physical_address = to_physical_address(ptr_frame_info);
 
 #if USE_KHEAP
 	{
-		//FIX: we should implement a better solution for this, but for now
+		// FIX: we should implement a better solution for this, but for now
 		//		we are using an unsed VA in the invalid area of kernel at 0xef800000 (the current USER_LIMIT)
 		//		to do temp initialization of a frame.
 		map_frame(e->env_page_directory, ptr_frame_info, USER_LIMIT, PERM_WRITEABLE);
-		memset((void*)USER_LIMIT, 0, PAGE_SIZE);
+		memset((void *)USER_LIMIT, 0, PAGE_SIZE);
 
 		// Temporarily increase the references to prevent unmap_frame from removing the frame
 		// we just got from allocate_frame, we will use it for the new page
 		ptr_frame_info->references += 1;
 		unmap_frame(e->env_page_directory, USER_LIMIT);
 
-		//return it to the original status
+		// return it to the original status
 		ptr_frame_info->references -= 1;
 	}
 #else
@@ -181,13 +178,13 @@ static int __sys_allocate_page(void *va, int perm)
 		memset(STATIC_KERNEL_VIRTUAL_ADDRESS(physical_address), 0, PAGE_SIZE);
 	}
 #endif
-	r = map_frame(e->env_page_directory, ptr_frame_info, (uint32)va, perm) ;
+	r = map_frame(e->env_page_directory, ptr_frame_info, (uint32)va, perm);
 	if (r == E_NO_MEM)
 	{
 		decrement_references(ptr_frame_info);
 		return r;
 	}
-	return 0 ;
+	return 0;
 }
 
 // Map the page of memory at 'srcva' in srcenvid's address space
@@ -219,7 +216,6 @@ static int __sys_map_frame(int32 srcenvid, void *srcva, int32 dstenvid, void *ds
 	// LAB 4: Your code here.
 	panic("sys_map_frame not implemented");
 	return 0;
-
 }
 
 // Unmap the page of memory at 'va' in the address space of 'envid'.
@@ -278,11 +274,11 @@ void sys_clearFFL()
 	int size;
 	acquire_spinlock(&MemFrameLists.mfllock);
 	{
-		size = LIST_SIZE(&MemFrameLists.free_frame_list) ;
-		struct FrameInfo* ptr_tmp_FI ;
-		for (int i = 0; i < size ; i++)
+		size = LIST_SIZE(&MemFrameLists.free_frame_list);
+		struct FrameInfo *ptr_tmp_FI;
+		for (int i = 0; i < size; i++)
 		{
-			allocate_frame(&ptr_tmp_FI) ;
+			allocate_frame(&ptr_tmp_FI);
 		}
 	}
 	release_spinlock(&MemFrameLists.mfllock);
@@ -301,12 +297,12 @@ int sys_pf_calculate_allocated_pages(void)
 /*******************************/
 void sys_free_user_mem(uint32 virtual_address, uint32 size)
 {
-	if(virtual_address < USER_HEAP_START || (virtual_address + size) >= USER_HEAP_MAX ||virtual_address == 0 )
+	if (virtual_address < USER_HEAP_START || (virtual_address + size) >= USER_HEAP_MAX || virtual_address == 0)
 	{
 		env_exit();
 	}
 
-	else if(isBufferingEnabled())
+	else if (isBufferingEnabled())
 	{
 		__free_user_mem_with_buffering(cur_env, virtual_address, size);
 	}
@@ -319,18 +315,16 @@ void sys_free_user_mem(uint32 virtual_address, uint32 size)
 
 void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 {
-	//TODO: [PROJECT'24.MS1 - #03] [2] SYSTEM CALLS - Params Validation
-	
+	// TODO: [PROJECT'24.MS1 - #03] [2] SYSTEM CALLS - Params Validation
 
-	if(virtual_address == 0)
+	if (virtual_address == 0)
 	{
 		env_exit();
 	}
-	if(virtual_address < USER_HEAP_START || (virtual_address + size) >= USER_HEAP_MAX )
+	if (virtual_address < USER_HEAP_START || (virtual_address + size) >= USER_HEAP_MAX)
 	{
 		env_exit();
 	}
-
 
 	allocate_user_mem(cur_env, virtual_address, size);
 	return;
@@ -338,23 +332,23 @@ void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 
 void sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms)
 {
-	//TODO: [PROJECT'24.MS1 - #03] [2] SYSTEM CALLS - Params Validation
+	// TODO: [PROJECT'24.MS1 - #03] [2] SYSTEM CALLS - Params Validation
 
 	allocate_chunk(cur_env->env_page_directory, virtual_address, size, perms);
 	return;
 }
 
-//2014
+// 2014
 void sys_move_user_mem(uint32 src_virtual_address, uint32 dst_virtual_address, uint32 size)
 {
 	move_user_mem(cur_env, src_virtual_address, dst_virtual_address, size);
 	return;
 }
 
-//2015
+// 2015
 uint32 sys_get_heap_strategy()
 {
-	return _UHeapPlacementStrategy ;
+	return _UHeapPlacementStrategy;
 }
 void sys_set_uheap_strategy(uint32 heapStrategy)
 {
@@ -367,20 +361,79 @@ void sys_set_uheap_strategy(uint32 heapStrategy)
 //[PROJECT'24.MS3] ADD SUITABLE CODE HERE
 
 
+
+
+
+void sys_init_queue (struct Env_Queue *queue)
+{
+    init_queue(queue);
+
+}
+void sys_enqeue(struct Env_Queue *queue,struct Env *env) 
+{
+    // init_queue(queue);
+	enqueue(queue,env);
+
+}
+struct Env * sys_deqeue(struct Env_Queue *queue) 
+{
+    // init_queue(queue);
+	return dequeue(queue);
+
+}
+void sys_sched_insert_ready(struct Env *env) 
+{
+    // init_queue(queue);
+	return sched_insert_ready(env);
+
+}
+void sys_sched_remove_ready(struct Env *env) 
+{
+    // init_queue(queue);
+	return sched_remove_ready(env);
+
+}
+// void sys_acquire_spin_lock(struct spinlock *lk)
+// {
+// 	acquire_sleeplock
+// 	acquire_spinlock(lk);
+//     // init_queue(queue);
+// 	// enqueue(queue,env);
+
+// }
+void sys_acquire_spin_lock()
+{
+	acquire_spinlock(&(ProcessQueues.qlock));
+
+}
+void sys_release_spin_lock()
+{
+	// acquire_spinlock(&(ProcessQueues.qlock));
+	release_spinlock(&(ProcessQueues.qlock));
+
+}
+
+
+
+
+
+
+
+
 /*******************************/
 /* SHARED MEMORY SYSTEM CALLS */
 /*******************************/
-int sys_createSharedObject(char* shareName, uint32 size, uint8 isWritable, void* virtual_address)
+int sys_createSharedObject(char *shareName, uint32 size, uint8 isWritable, void *virtual_address)
 {
 	return createSharedObject(cur_env->env_id, shareName, size, isWritable, virtual_address);
 }
 
-int sys_getSizeOfSharedObject(int32 ownerID, char* shareName)
+int sys_getSizeOfSharedObject(int32 ownerID, char *shareName)
 {
 	return getSizeOfSharedObject(ownerID, shareName);
 }
 
-int sys_getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
+int sys_getSharedObject(int32 ownerID, char *shareName, void *virtual_address)
 {
 	return getSharedObject(ownerID, shareName, virtual_address);
 }
@@ -390,24 +443,27 @@ int sys_freeSharedObject(int32 sharedObjectID, void *startVA)
 	return freeSharedObject(sharedObjectID, startVA);
 }
 
+
+
+
 /*********************************/
 /* USER ENVIRONMENT SYSTEM CALLS */
 /*********************************/
 // Returns the current environment's envid.
-//2017
+// 2017
 static int32 sys_getenvid(void)
 {
 	return cur_env->env_id;
 }
 
-//2017
+// 2017
 static int32 sys_getenvindex(void)
 {
-	//return cur_env->env_id;
-	return (cur_env - envs) ;
+	// return cur_env->env_id;
+	return (cur_env - envs);
 }
 
-//2017
+// 2017
 static int32 sys_getparentenvid(void)
 {
 	return cur_env->env_parent_id;
@@ -425,7 +481,7 @@ static int sys_destroy_env(int32 envid)
 	struct Env *e;
 	if (envid == 0)
 	{
-		e = cur_env ;
+		e = cur_env;
 	}
 	else if ((r = envid2env(envid, &e, 0)) < 0)
 	{
@@ -440,51 +496,49 @@ static int sys_destroy_env(int32 envid)
 	{
 		cprintf("[%08x] destroying %08x\n", cur_env->env_id, e->env_id);
 	}
-	//2015
+	// 2015
 	sched_kill_env(e->env_id);
 
 	return 0;
 }
 
-//Just place the current env into the EXIT queue & schedule the next one
+// Just place the current env into the EXIT queue & schedule the next one
 static void sys_exit_env()
 {
-	//2015
+	// 2015
 	env_exit();
 
-	//2024: if returned here, then it's not the current environment. So, just return
-	//env_run_cmd_prmpt();
-	//context_switch(&(cur_env->context), mycpu()->scheduler);
-
+	// 2024: if returned here, then it's not the current environment. So, just return
+	// env_run_cmd_prmpt();
+	// context_switch(&(cur_env->context), mycpu()->scheduler);
 }
 
-//New update in 2020
-//Create a new env & add it to the NEW queue
-int sys_create_env(char* programName, unsigned int page_WS_size,unsigned int LRU_second_list_size, unsigned int percent_WS_pages_to_remove)
+// New update in 2020
+// Create a new env & add it to the NEW queue
+int sys_create_env(char *programName, unsigned int page_WS_size, unsigned int LRU_second_list_size, unsigned int percent_WS_pages_to_remove)
 {
-	//cprintf("\nAttempt to create a new env\n");
+	// cprintf("\nAttempt to create a new env\n");
 
-	struct Env* env =  env_create(programName, page_WS_size, LRU_second_list_size, percent_WS_pages_to_remove);
-	if(env == NULL)
+	struct Env *env = env_create(programName, page_WS_size, LRU_second_list_size, percent_WS_pages_to_remove);
+	if (env == NULL)
 	{
 		return E_ENV_CREATION_ERROR;
 	}
-	//cprintf("\nENV %d is created\n", env->env_id);
+	// cprintf("\nENV %d is created\n", env->env_id);
 
-	//2015
+	// 2015
 	sched_new_env(env);
 
-	//cprintf("\nENV %d is scheduled as NEW\n", env->env_id);
+	// cprintf("\nENV %d is scheduled as NEW\n", env->env_id);
 
 	return env->env_id;
 }
 
-//Place a new env into the READY queue
+// Place a new env into the READY queue
 void sys_run_env(int32 envId)
 {
 	sched_run_env(envId);
 }
-
 
 //====================================
 /*******************************/
@@ -506,7 +560,6 @@ void sys_bypassPageFault(uint8 instrLength)
 	bypassInstrLength = instrLength;
 }
 
-
 void sys_env_set_priority(int envID, int priority){
 	env_set_priority(envID,priority);
 }
@@ -519,26 +572,102 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	cur_env = get_cpu_proc();
 	assert(cur_env != NULL);
 
-	//cprintf("syscallno = %d\n", syscallno);
-	// Call the function corresponding to the 'syscallno' parameter.
-	// Return any appropriate return value.
-	switch(syscallno)
+	// cprintf("syscallno = %d\n", syscallno);
+	//  Call the function corresponding to the 'syscallno' parameter.
+	//  Return any appropriate return value.
+	switch (syscallno)
 	{
-	//TODO: [PROJECT'24.MS1 - #02] [2] SYSTEM CALLS - Add suitable code here
+	// TODO: [PROJECT'24.MS1 - #02] [2] SYSTEM CALLS - Add suitable code here
 	case SYS_sbrk:
-     	return (int) sys_sbrk( (int) a1 );
-	 	break;
- 	case SYS_free_user_mem:
-		sys_free_user_mem(a1 , a2);
+		return (int)sys_sbrk((int)a1);
+		break;
+	case SYS_free_user_mem:
+		sys_free_user_mem(a1, a2);
 		return 0;
 		break;
+	// case SYS_init_queue:
+
+	// 	struct Env_Queue *queue = (struct Env_Queue *)a1;
+	// 	sys_init_queue(queue);
+	// 	return 0;
+	// 	break;
+case SYS_init_queue: {
+    struct Env_Queue *queue = (struct Env_Queue *)a1; // Cast a1 to the correct type
+    sys_init_queue(queue);                           // Pass queue directly
+    return 0;
+}
+break;
+case SYS_enqeue: {
+    struct Env_Queue *queue = (struct Env_Queue *)a1; // Cast a1 to the correct type
+    // sys_init_queue(queue);  
+	    sys_enqeue(queue, (struct Env *)a2);             // Pass queue directly
+
+    return 0;
+}
+break;
+case SYS_deqeue: {
+    struct Env_Queue *queue = (struct Env_Queue *)a1; // Cast a1 to the correct type
+    // sys_init_queue(queue);  
+	    sys_deqeue(queue);             // Pass queue directly
+
+    return 0;
+}
+break;
+case SYS_sched_insert_ready: {
+    struct Env *queue = (struct Env *)a1; // Cast a1 to the correct type
+ sys_sched_insert_ready(queue);
+    // sys_init_queue(queue);  
+	    // sys_deqeue(queue);             // Pass queue directly
+
+    return 0;
+}
+break;
+
+// case SYS_remove_from_queue: {
+//     struct Env_Queue *queue = (struct Env_Queue *)a1; // Cast a1 to the correct type
+//     sys_init_queue(queue);                           // Pass queue directly
+   
+//     return 0;
+// }
+// break;
+// case SYS_acquire_spin_lock: {
+//     struct Env_Queue *queue = (struct Env_Queue *)a1; // Cast a1 to the correct type
+//     sys_acquire_spin_lock(queue);                           // Pass queue directly
+//     return 0;
+// }
+// break;
+case SYS_acquire_spin_lock: {
+    // struct spinlock *lk = (struct spinlock *)a1; // Cast a1 to the correct type (assuming it's a spinlock pointer)
+    // sys_acquire_spin_lock(lk);       
+    sys_acquire_spin_lock(&(ProcessQueues.qlock));       
+	
+	return 0;
+}
+break;
+case SYS_release_spin_lock: {
+    // struct spinlock *lk = (struct spinlock *)a1; // Cast a1 to the correct type (assuming it's a spinlock pointer)
+    // sys_acquire_spin_lock(lk);    
+
+    sys_release_spin_lock(&(ProcessQueues.qlock));       
+
+	return 0;
+}
+break;
+
+// case SYS_release_spin_lock: {
+//     struct Env_Queue *queue = (struct Env_Queue *)a1; // Cast a1 to the correct type
+//     sys_init_queue(queue);                           // Pass queue directly
+//     return 0;
+// }
+// break;
+
 	case SYS_allocate_user_mem:
-		sys_allocate_user_mem(a1 , a2);
+		sys_allocate_user_mem(a1, a2);
 		return 0;
 		break;
 	//======================================================================
 	case SYS_cputs:
-		sys_cputs((const char*)a1,a2,(uint8)a3);
+		sys_cputs((const char *)a1, a2, (uint8)a3);
 		return 0;
 		break;
 	case SYS_cgetc:
@@ -582,15 +711,15 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 
 		//======================
 	case SYS_allocate_page:
-		__sys_allocate_page((void*)a1, a2);
+		__sys_allocate_page((void *)a1, a2);
 		return 0;
 		break;
 	case SYS_map_frame:
-		__sys_map_frame(a1, (void*)a2, a3, (void*)a4, a5);
+		__sys_map_frame(a1, (void *)a2, a3, (void *)a4, a5);
 		return 0;
 		break;
 	case SYS_unmap_frame:
-		__sys_unmap_frame(a1, (void*)a2);
+		__sys_unmap_frame(a1, (void *)a2);
 		return 0;
 		break;
 
@@ -605,11 +734,11 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		break;
 
 	case SYS_create_shared_object:
-		return sys_createSharedObject((char*)a1, a2, a3, (void*)a4);
+		return sys_createSharedObject((char *)a1, a2, a3, (void *)a4);
 		break;
 
 	case SYS_get_shared_object:
-		return sys_getSharedObject((int32)a1, (char*)a2, (void*)a3);
+		return sys_getSharedObject((int32)a1, (char *)a2, (void *)a3);
 		break;
 
 	case SYS_free_shared_object:
@@ -617,11 +746,11 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		break;
 
 	case SYS_get_size_of_shared_object:
-		return sys_getSizeOfSharedObject((int32)a1, (char*)a2);
+		return sys_getSizeOfSharedObject((int32)a1, (char *)a2);
 		break;
 
 	case SYS_create_env:
-		return sys_create_env((char*)a1, (uint32)a2, (uint32)a3, (uint32)a4);
+		return sys_create_env((char *)a1, (uint32)a2, (uint32)a3, (uint32)a4);
 		break;
 
 	case SYS_run_env:
@@ -647,8 +776,8 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	case SYS_get_virtual_time:
 	{
 		struct uint64 res = sys_get_virtual_time();
-		uint32* ptrlow = ((uint32*)a1);
-		uint32* ptrhi = ((uint32*)a2);
+		uint32 *ptrlow = ((uint32 *)a1);
+		uint32 *ptrhi = ((uint32 *)a2);
 		*ptrlow = res.low;
 		*ptrhi = res.hi;
 		return 0;
@@ -688,22 +817,22 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 		return 0;
 
 	case SYS_check_LRU_lists:
-		return sys_check_LRU_lists((uint32*)a1, (uint32*)a2, (int)a3, (int)a4);
+		return sys_check_LRU_lists((uint32 *)a1, (uint32 *)a2, (int)a3, (int)a4);
 
 	case SYS_check_LRU_lists_free:
-		return sys_check_LRU_lists_free((uint32*)a1, (int)a2);
+		return sys_check_LRU_lists_free((uint32 *)a1, (int)a2);
 
 	case SYS_check_WS_list:
-		return sys_check_WS_list((uint32*)a1, (int)a2, (uint32)a3, (bool)a4);
+		return sys_check_WS_list((uint32 *)a1, (int)a2, (uint32)a3, (bool)a4);
 
 	case SYS_utilities:
-		sys_utilities((char*)a1, (int)a2);
+		sys_utilities((char *)a1, (int)a2);
 		return 0;
 
 	case NSYSCALLS:
-		return 	-E_INVAL;
+		return -E_INVAL;
 		break;
 	}
-	//panic("syscall not implemented");
+	// panic("syscall not implemented");
 	return -E_INVAL;
 }

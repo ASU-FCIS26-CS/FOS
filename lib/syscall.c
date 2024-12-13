@@ -21,27 +21,25 @@ syscall(int num, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uint32 a5)
 	// memory locations.
 
 	asm volatile("int %1\n"
-		: "=a" (ret)
-		: "i" (T_SYSCALL),
-		  "a" (num),
-		  "d" (a1),
-		  "c" (a2),
-		  "b" (a3),
-		  "D" (a4),
-		  "S" (a5)
-		: "cc", "memory");
+				 : "=a"(ret)
+				 : "i"(T_SYSCALL),
+				   "a"(num),
+				   "d"(a1),
+				   "c"(a2),
+				   "b"(a3),
+				   "D"(a4),
+				   "S"(a5)
+				 : "cc", "memory");
 
 	return ret;
 }
 
-void
-sys_cputs(const char *s, uint32 len, uint8 printProgName)
+void sys_cputs(const char *s, uint32 len, uint8 printProgName)
 {
-	syscall(SYS_cputs, (uint32) s, len, (uint32)printProgName, 0, 0);
+	syscall(SYS_cputs, (uint32)s, len, (uint32)printProgName, 0, 0);
 }
 
-int
-sys_cgetc(void)
+int sys_cgetc(void)
 {
 	return syscall(SYS_cgetc, 0, 0, 0, 0, 0);
 }
@@ -57,22 +55,22 @@ void sys_unlock_cons(void)
 
 int __sys_allocate_page(void *va, int perm)
 {
-	return syscall(SYS_allocate_page, (uint32) va, perm, 0 , 0, 0);
+	return syscall(SYS_allocate_page, (uint32)va, perm, 0, 0, 0);
 }
 
 int __sys_map_frame(int32 srcenv, void *srcva, int32 dstenv, void *dstva, int perm)
 {
-	return syscall(SYS_map_frame, srcenv, (uint32) srcva, dstenv, (uint32) dstva, perm);
+	return syscall(SYS_map_frame, srcenv, (uint32)srcva, dstenv, (uint32)dstva, perm);
 }
 
 int __sys_unmap_frame(int32 envid, void *va)
 {
-	return syscall(SYS_unmap_frame, envid, (uint32) va, 0, 0, 0);
+	return syscall(SYS_unmap_frame, envid, (uint32)va, 0, 0, 0);
 }
 
 uint32 sys_calculate_required_frames(uint32 start_virtual_address, uint32 size)
 {
-	return syscall(SYS_calc_req_frames, start_virtual_address, (uint32) size, 0, 0, 0);
+	return syscall(SYS_calc_req_frames, start_virtual_address, (uint32)size, 0, 0, 0);
 }
 
 uint32 sys_calculate_free_frames()
@@ -91,58 +89,55 @@ uint32 sys_calculate_notmod_frames()
 
 int sys_pf_calculate_allocated_pages()
 {
-	return syscall(SYS_pf_calc_allocated_pages, 0,0,0,0,0);
+	return syscall(SYS_pf_calc_allocated_pages, 0, 0, 0, 0, 0);
 }
 
 int sys_calculate_pages_tobe_removed_ready_exit(uint32 WS_or_MEMORY_flag)
 {
-	return syscall(SYS_calculate_pages_tobe_removed_ready_exit, WS_or_MEMORY_flag,0,0,0,0);
+	return syscall(SYS_calculate_pages_tobe_removed_ready_exit, WS_or_MEMORY_flag, 0, 0, 0, 0);
 }
 
 void sys_scarce_memory()
 {
-	syscall(SYS_scarce_memory,0,0,0,0,0);
+	syscall(SYS_scarce_memory, 0, 0, 0, 0, 0);
 }
 
-void
-sys_cputc(const char c)
+void sys_cputc(const char c)
 {
-	syscall(SYS_cputc, (uint32) c, 0, 0, 0, 0);
+	syscall(SYS_cputc, (uint32)c, 0, 0, 0, 0);
 }
 
-
-//NEW'12: BONUS2 Testing
-void
-sys_clear_ffl()
+// NEW'12: BONUS2 Testing
+void sys_clear_ffl()
 {
-	syscall(SYS_clearFFL,0, 0, 0, 0, 0);
+	syscall(SYS_clearFFL, 0, 0, 0, 0, 0);
 }
 
-int sys_createSharedObject(char* shareName, uint32 size, uint8 isWritable, void* virtual_address)
+int sys_createSharedObject(char *shareName, uint32 size, uint8 isWritable, void *virtual_address)
 {
-	return syscall(SYS_create_shared_object,(uint32)shareName, (uint32)size, isWritable, (uint32)virtual_address,  0);
+	return syscall(SYS_create_shared_object, (uint32)shareName, (uint32)size, isWritable, (uint32)virtual_address, 0);
 }
 
-//2017:
-int sys_getSizeOfSharedObject(int32 ownerID, char* shareName)
+// 2017:
+int sys_getSizeOfSharedObject(int32 ownerID, char *shareName)
 {
-	return syscall(SYS_get_size_of_shared_object,(uint32) ownerID, (uint32)shareName, 0, 0, 0);
+	return syscall(SYS_get_size_of_shared_object, (uint32)ownerID, (uint32)shareName, 0, 0, 0);
 }
 //==========
 
-int sys_getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
+int sys_getSharedObject(int32 ownerID, char *shareName, void *virtual_address)
 {
-	return syscall(SYS_get_shared_object,(uint32) ownerID, (uint32)shareName, (uint32)virtual_address, 0, 0);
+	return syscall(SYS_get_shared_object, (uint32)ownerID, (uint32)shareName, (uint32)virtual_address, 0, 0);
 }
 
 int sys_freeSharedObject(int32 sharedObjectID, void *startVA)
 {
-	return syscall(SYS_free_shared_object,(uint32) sharedObjectID, (uint32) startVA, 0, 0, 0);
+	return syscall(SYS_free_shared_object, (uint32)sharedObjectID, (uint32)startVA, 0, 0, 0);
 }
 
-int sys_create_env(char* programName, unsigned int page_WS_size,unsigned int LRU_second_list_size,unsigned int percent_WS_pages_to_remove)
+int sys_create_env(char *programName, unsigned int page_WS_size, unsigned int LRU_second_list_size, unsigned int percent_WS_pages_to_remove)
 {
-	return syscall(SYS_create_env,(uint32)programName, (uint32)page_WS_size,(uint32)LRU_second_list_size, (uint32)percent_WS_pages_to_remove, 0);
+	return syscall(SYS_create_env, (uint32)programName, (uint32)page_WS_size, (uint32)LRU_second_list_size, (uint32)percent_WS_pages_to_remove, 0);
 }
 
 void sys_run_env(int32 envId)
@@ -150,38 +145,36 @@ void sys_run_env(int32 envId)
 	syscall(SYS_run_env, (int32)envId, 0, 0, 0, 0);
 }
 
-int sys_destroy_env(int32  envid)
+int sys_destroy_env(int32 envid)
 {
 	return syscall(SYS_destroy_env, envid, 0, 0, 0, 0);
 }
 
 int32 sys_getenvid(void)
 {
-	 return syscall(SYS_getenvid, 0, 0, 0, 0, 0);
+	return syscall(SYS_getenvid, 0, 0, 0, 0, 0);
 }
 
-//2017
+// 2017
 int32 sys_getenvindex(void)
 {
-	 return syscall(SYS_getenvindex, 0, 0, 0, 0, 0);
+	return syscall(SYS_getenvindex, 0, 0, 0, 0, 0);
 }
 
 int32 sys_getparentenvid(void)
 {
-	 return syscall(SYS_getparentenvid, 0, 0, 0, 0, 0);
+	return syscall(SYS_getparentenvid, 0, 0, 0, 0, 0);
 }
-
 
 void sys_exit_env(void)
 {
 	syscall(SYS_exit_env, 0, 0, 0, 0, 0);
 }
 
-
 struct uint64 sys_get_virtual_time()
 {
 	struct uint64 result;
-	syscall(SYS_get_virtual_time, (uint32)&(result.low), (uint32)&(result.hi), 0, 0, 0);
+	syscall(SYS_get_virtual_time, (uint32) & (result.low), (uint32) & (result.hi), 0, 0, 0);
 	return result;
 }
 
@@ -189,7 +182,7 @@ struct uint64 sys_get_virtual_time()
 void sys_move_user_mem(uint32 src_virtual_address, uint32 dst_virtual_address, uint32 size)
 {
 	syscall(SYS_move_user_mem, src_virtual_address, dst_virtual_address, size, 0, 0);
-	return ;
+	return;
 }
 uint32 sys_rcr2()
 {
@@ -199,36 +192,35 @@ uint32 sys_rcr2()
 void sys_bypassPageFault(uint8 instrLength)
 {
 	syscall(SYS_bypassPageFault, instrLength, 0, 0, 0, 0);
-	return ;
+	return;
 }
 void rsttst()
 {
 	syscall(SYS_rsttst, 0, 0, 0, 0, 0);
-	return ;
+	return;
 }
 void tst(uint32 n, uint32 v1, uint32 v2, char c, int inv)
 {
 	syscall(SYS_testNum, n, v1, v2, c, inv);
-	return ;
+	return;
 }
 void chktst(uint32 n)
 {
 	syscall(SYS_chktst, n, 0, 0, 0, 0);
-	return ;
+	return;
 }
 
 void inctst()
 {
 	syscall(SYS_inctst, 0, 0, 0, 0, 0);
-	return ;
+	return;
 }
 uint32 gettst()
 {
 	return syscall(SYS_gettst, 0, 0, 0, 0, 0);
 }
 
-
-//2015
+// 2015
 uint32 sys_isUHeapPlacementStrategyFIRSTFIT()
 {
 	uint32 ret = syscall(SYS_get_heap_strategy, 0, 0, 0, 0, 0);
@@ -265,59 +257,112 @@ uint32 sys_isUHeapPlacementStrategyWORSTFIT()
 void sys_set_uheap_strategy(uint32 heapStrategy)
 {
 	syscall(SYS_set_heap_strategy, heapStrategy, 0, 0, 0, 0);
-	return ;
+	return;
 }
 
-//2020
-int sys_check_LRU_lists(uint32* active_list_content, uint32* second_list_content, int actual_active_list_size, int actual_second_list_size)
+// 2020
+int sys_check_LRU_lists(uint32 *active_list_content, uint32 *second_list_content, int actual_active_list_size, int actual_second_list_size)
 {
 	return syscall(SYS_check_LRU_lists, (uint32)active_list_content, (uint32)second_list_content, (uint32)actual_active_list_size, (uint32)actual_second_list_size, 0);
 }
 
-int sys_check_LRU_lists_free(uint32* list_content, int list_size)
+int sys_check_LRU_lists_free(uint32 *list_content, int list_size)
 {
-	return syscall(SYS_check_LRU_lists_free, (uint32)list_content, (uint32)list_size , 0, 0, 0);
+	return syscall(SYS_check_LRU_lists_free, (uint32)list_content, (uint32)list_size, 0, 0, 0);
 }
 
-int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 last_WS_element_content, bool chk_in_order)
+int sys_check_WS_list(uint32 *WS_list_content, int actual_WS_list_size, uint32 last_WS_element_content, bool chk_in_order)
 {
-	return syscall(SYS_check_WS_list, (uint32)WS_list_content, (uint32)actual_WS_list_size , last_WS_element_content, (uint32)chk_in_order, 0);
+	return syscall(SYS_check_WS_list, (uint32)WS_list_content, (uint32)actual_WS_list_size, last_WS_element_content, (uint32)chk_in_order, 0);
 }
 void sys_allocate_chunk(uint32 virtual_address, uint32 size, uint32 perms)
 {
 	syscall(SYS_allocate_chunk_in_mem, virtual_address, size, perms, 0, 0);
-	return ;
+	return;
 }
-void sys_utilities(char* utilityName, int value)
+void sys_utilities(char *utilityName, int value)
 {
 	syscall(SYS_utilities, (uint32)utilityName, value, 0, 0, 0);
 	return;
 }
 
-
-//TODO: [PROJECT'24.MS1 - #02] [2] SYSTEM CALLS - Implement these system calls
-void* sys_sbrk(int increment)
+// TODO: [PROJECT'24.MS1 - #02] [2] SYSTEM CALLS - Implement these system calls
+void *sys_sbrk(int increment)
 {
-	void *mem_ptr = (void*)syscall(SYS_sbrk,increment,0,0,0,0);
+	void *mem_ptr = (void *)syscall(SYS_sbrk, increment, 0, 0, 0, 0);
 
-	//Comment the following line before start coding...
-	//panic("not implemented yet");
+	// Comment the following line before start coding...
+	// panic("not implemented yet");
 
 	return mem_ptr;
 }
 
 void sys_free_user_mem(uint32 virtual_address, uint32 size)
 {
-	//Comment the following line before start coding...
-	//panic("not implemented yet");
+	// Comment the following line before start coding...
+	// panic("not implemented yet");
 
-	syscall( SYS_free_user_mem , virtual_address , size , 0 , 0 , 0 );
+	syscall(SYS_free_user_mem, virtual_address, size, 0, 0, 0);
 }
 
 void sys_allocate_user_mem(uint32 virtual_address, uint32 size)
 {
-	//Comment the following line before start coding...
-	//panic("not implemented yet");
+	// Comment the following line before start coding...
+	// panic("not implemented yet");
 
-	syscall( SYS_allocate_user_mem , virtual_address , size , 0 , 0 , 0 );
+	syscall(SYS_allocate_user_mem, virtual_address, size, 0, 0, 0);
 }
+
+void sys_init_queue(struct Env_Queue *queue)
+{
+	syscall(SYS_init_queue, (uint32)queue, 0, 0, 0, 0);
+}
+void sys_enqeue(struct Env_Queue *queue, struct Env *env)
+{
+	syscall(SYS_enqeue, (uint32)queue, (uint32)env, 0, 0, 0);
+}
+// struct Env * sys_deqeue(struct Env_Queue *queue) {
+//     syscall(SYS_deqeue, (uint32)queue,0, 0, 0, 0);
+// }
+struct Env *sys_deqeue(struct Env_Queue *queue)
+{
+	return (struct Env *)syscall(SYS_deqeue, (uint32)queue, 0, 0, 0, 0);
+}
+
+// void sys_sched_insert_ready(struct Env *env)
+// {
+// 	return syscall(SYS_sched_insert_ready, (uint32)env, 0, 0, 0, 0);
+// }
+void sys_sched_insert_ready(struct Env *env)
+{
+     syscall(SYS_sched_insert_ready, (uint32)env, 0, 0, 0, 0);
+}
+void sys_sched_remove_ready(struct Env *env)
+{
+	
+     syscall(SYS_sched_remove_ready, (uint32)env, 0, 0, 0, 0);
+}
+
+// void sys_acquire_spin_lock(struct spinlock *lk) {
+//     syscall(SYS_acquire_spin_lock, (uint32)lk,0, 0, 0, 0);
+// }
+// void sys_acquire_spin_lock(struct semaphore *sem)
+// {
+	
+// 	syscall(SYS_acquire_spin_lock, (uint32)sem, 0, 0, 0, 0);
+// }
+void sys_acquire_spin_lock()
+{
+	
+	syscall(SYS_acquire_spin_lock, 0, 0, 0, 0, 0);
+}
+void sys_release_spin_lock()
+{
+	
+	syscall(SYS_release_spin_lock, 0, 0, 0, 0, 0);
+}
+
+// void sys_init_queue (struct Env_Queue *queue){
+// 	syscall(SYS_init_queue, queue , 0 , 0 , 0 , 0  );
+
+// }
