@@ -35,7 +35,9 @@ void sched_init()
 {
 	old_pf_counter = 0;
 
-	sched_init_RR(INIT_QUANTUM_IN_MS);
+	//sched_init_RR(INIT_QUANTUM_IN_MS);
+	// remember to ask TA if we should keep it like this
+	sched_init_PRIRR(5, 10, 10);
 
 	init_queue(&ProcessQueues.env_new_queue);
 	init_queue(&ProcessQueues.env_exit_queue);
