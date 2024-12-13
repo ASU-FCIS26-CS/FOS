@@ -12,7 +12,7 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 	// Your Code is Here...
 	struct semaphore sem;
 	sem.semdata = NULL;
-	
+
 	sem.semdata = smalloc(semaphoreName, sizeof(struct semaphore), 1);
 
 	sem.semdata->count = value;
@@ -27,7 +27,11 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 
 struct semaphore get_semaphore(int32 ownerEnvID, char *semaphoreName)
 {
-	
+	//TODO: [PROJECT'24.MS3 - #03] [2] USER-LEVEL SEMAPHORE - get_semaphore
+	//COMMENT THE FOLLOWING LINE BEFORE START CODING
+	//panic("get_semaphore is not implemented yet");
+	//Your Code is Here..
+
 	struct semaphore sem;
 	sem.semdata = NULL;
 
@@ -38,7 +42,7 @@ struct semaphore get_semaphore(int32 ownerEnvID, char *semaphoreName)
 	if (sem.semdata == NULL)
 	{
 		cprintf("Error: Semaphore not found for ownerEnvID %d, semaphoreName %s\n", ownerEnvID, semaphoreName);
-	
+
 		return sem;
 	}
 
@@ -46,12 +50,16 @@ struct semaphore get_semaphore(int32 ownerEnvID, char *semaphoreName)
 
 	// Release lock
 	sem.semdata->lock = 0;
-	
+
 	return sem;
 }
 
 void wait_semaphore(struct semaphore sem)
 {
+	//TODO: [PROJECT'24.MS3 - #04] [2] USER-LEVEL SEMAPHORE - wait_semaphore
+	//COMMENT THE FOLLOWING LINE BEFORE START CODING
+	//panic("wait_semaphore is not implemented yet");
+	//Your Code is Here...
 
 	cprintf("wait_semaphore called \n");
 	// Use a spinlock to ensure atomic access to the semaphore data
@@ -87,6 +95,10 @@ void wait_semaphore(struct semaphore sem)
 
 void signal_semaphore(struct semaphore sem)
 {
+	//TODO: [PROJECT'24.MS3 - #05] [2] USER-LEVEL SEMAPHORE - signal_semaphore
+	//COMMENT THE FOLLOWING LINE BEFORE START CODING
+	//panic("signal_semaphore is not implemented yet");
+	//Your Code is Here
 
 	// while (xchg(&(sem.semdata->lock), 1) != 0);
 	// sys_acquire_spin_lock();
@@ -94,7 +106,7 @@ void signal_semaphore(struct semaphore sem)
 	// Increment the semaphore count
 	sem.semdata->count++;
 
-	
+
 	if (sem.semdata->count <= 0)
 	{
 		// Remove a process from the semaphore's queue
@@ -112,10 +124,8 @@ void signal_semaphore(struct semaphore sem)
 	// Release the spinlock
 	sem.semdata->lock = 0;
 	//sys_release_spin_lock();
-	
+
 }
-
-
 
 int semaphore_count(struct semaphore sem)
 {
