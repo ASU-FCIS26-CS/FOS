@@ -168,6 +168,7 @@ void fault_handler(struct Trapframe *tf)
 			            	//cprintf("I'm 3 \n");
 			                env_exit();
 			            }
+
 		/*============================================================================================*/
 		}
 
@@ -238,10 +239,7 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		uint32 wsSize = env_page_ws_get_size(faulted_env);
 #endif
 
-		//cprintf("I got here 1 \n");
-		//cprintf("%d \n", wsSize);
-		//cprintf("%d \n", (faulted_env->page_WS_max_size));
-		//uint32 freePages = sys_calculate_free_frames();
+
 
 	if(wsSize < (faulted_env->page_WS_max_size))
 	{
@@ -250,7 +248,6 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//TODO: [PROJECT'24.MS2 - #09] [2] FAULT HANDLER I - Placement
 		// Write your code here, remove the panic and write your code
 		//panic("page_fault_handler().PLACEMENT is not implemented yet...!!");
-
 		//refer to the project presentation and documentation for details
 
 		struct  FrameInfo *ptr_element_frame;
@@ -294,7 +291,212 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 		//refer to the project presentation and documentation for details
 		//TODO: [PROJECT'24.MS3] [2] FAULT HANDLER II - Replacement
 		// Write your code here, remove the panic and write your code
-		panic("page_fault_handler() Replacement is not implemented yet...!!");
+		//panic("page_fault_handler() Replacement is not implemented yet...!!");
+
+		/* Efficint Nth Clock Replacement Implementation */
+
+		/* Algorithm Description */
+
+		/* N: max sweeps, M: WS Size
+		 * Old algorithm have time complexity of O(N.M)
+		 * Optimized algorithm to select a victim element in O(M) time.
+		 * Instead of iterating N times,it iterates one time on WS, extracting the element with the maximum sweep counter
+		 * then adding to other sweep counters the difference between the max clock and the previous maximum sweep counter.
+		 */
+		int maxClock;
+		int algo;
+		//MODIFIED MODE
+		if(page_WS_max_sweeps < 0)
+		{
+			maxClock = (-1*page_WS_max_sweeps);
+			algo = 1;
+		}
+		//NORMAL MODE
+		else
+		{
+			maxClock = page_WS_max_sweeps;
+			algo = 0;
+		}
+
+		struct WorkingSetElement* new_element = env_page_ws_list_create_element(faulted_env,fault_va);
+		struct WorkingSetElement* prevElement;
+		struct WorkingSetElement* nextElement;
+		struct WorkingSetElement* movingElement = faulted_env->page_last_WS_element;
+		struct WorkingSetElement* firstElement = faulted_env->page_last_WS_element;
+
+		int diff = 0;
+		int maxSweep = -2;
+		bool blocked = 0;
+
+		//env_page_ws_print(faulted_env);
+
+		for(int i = 0; i<wsSize ;i++)
+		{
+			//Getting current element permission
+			uint32 leaving_va = movingElement->virtual_address;
+			uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
+
+			/* Algorithm and Current element type */
+			bool unmodified = ((int)movingElement->sweeps_counter > maxSweep && !(perms & PERM_MODIFIED));
+			bool modified = ((int)movingElement->sweeps_counter -1 > maxSweep && (perms & PERM_MODIFIED));
+			bool normal = ((int)movingElement->sweeps_counter > maxSweep);
+
+			//If element is used, update it to be unused, and clear sweeps counter
+			if(perms & PERM_USED)
+			{
+				pt_set_page_permissions((faulted_env->env_page_directory),leaving_va,0,PERM_USED);
+				movingElement->sweeps_counter = 0;
+
+				//Check if current element's sweep counter is greater than maxSweep
+				if((int) movingElement->sweeps_counter - 1 > maxSweep)
+				{
+					//if so, update both victimWSElement and maxSweep
+					victimWSElement = movingElement;
+					maxSweep = (int)movingElement->sweeps_counter;
+				}
+				//if it's in Modified mode and current element is modified decrement maxSweep
+				if(algo == 1 && modified)
+				{
+					maxSweep--;
+				}
+			}
+			//NORMAL MODE
+			else if(algo == 0)
+			{
+				//if movingElement->sweeps_counter > maxSweep
+				if(normal)
+				{
+					//updating both victimWSElement and maxSweep
+					victimWSElement = movingElement;
+					maxSweep = (int)movingElement->sweeps_counter;
+
+					//if current element sweep counter is less than max clock by 1
+					//means it will be immediately replaced without checking other elements
+					if(maxSweep>=maxClock-1)
+					{
+						blocked = 1;
+						break;
+					}
+				}
+			}
+			//MODIFIED MODE
+			else if(algo == 1)
+			{
+				//if movingElement->sweeps_counter > maxSweep
+				if(unmodified || modified)
+				{
+					//updating both victimWSElement and maxSweep
+					victimWSElement = movingElement;
+					maxSweep = (int)movingElement->sweeps_counter;
+
+					//if current element is modified decrement maxSweep
+					if(modified){
+						maxSweep--;
+					}
+					//same as normal mode
+					if(maxSweep>=maxClock-1)
+					{
+						blocked = 1;
+						break;
+					}
+				}
+			}
+
+			//Moving to next element in WS
+			movingElement = LIST_NEXT(movingElement);
+			if(movingElement == NULL)
+			{
+				movingElement = LIST_FIRST(&(faulted_env->page_WS_list));
+			}
+		}
+
+		//Calculating difference between max clock and maxsweep
+		diff = maxClock - maxSweep - 1;
+		if(maxClock == 0)
+			diff = 0;
+
+		//Updating elements' sweep counter
+		movingElement = firstElement;
+		for(int i = 0; i<=wsSize;i++)
+		{
+			if(movingElement == victimWSElement && blocked)
+				break;
+			if(movingElement!= victimWSElement)
+			{
+				movingElement->sweeps_counter += diff;
+			}
+
+			movingElement = LIST_NEXT(movingElement);
+			if(movingElement == NULL)
+			{
+				movingElement = LIST_FIRST(&(faulted_env->page_WS_list));
+			}
+		}
+
+		uint32 leaving_va = victimWSElement->virtual_address;
+
+		//Getting victim's frame
+		uint32 *leavingPTelement;
+		struct FrameInfo *leavingFrame = get_frame_info((faulted_env->env_page_directory),leaving_va,&leavingPTelement);
+		uint32 perms = pt_get_page_permissions((faulted_env->env_page_directory),leaving_va);
+
+		//save modified files
+		if(perms & PERM_MODIFIED)
+		{
+			pf_update_env_page(faulted_env,leaving_va,leavingFrame);
+		}
+
+		//Getting previous and next element for the victim to insert new
+		prevElement = LIST_PREV(victimWSElement);
+		nextElement = LIST_NEXT(victimWSElement);
+
+		//Removing Victim from WS and deallocating it in kernel space
+		env_page_ws_invalidate(faulted_env, leaving_va);
+
+		//mapping new element
+		fault_va = ROUNDDOWN(fault_va, PAGE_SIZE);
+		struct  FrameInfo *ptr_element_frame = NULL;
+		allocate_frame(&(ptr_element_frame));
+		map_frame((faulted_env->env_page_directory),ptr_element_frame,fault_va,PERM_USER | PERM_WRITEABLE | PERM_USED);
+
+		//check if faulted virtual address in page doesn't exist in page file
+		bool notExist = pf_read_env_page(faulted_env, (void*)fault_va) == E_PAGE_NOT_EXIST_IN_PF;
+		if (notExist) {
+
+			//check if faulted virtual address is in the user heap and user stack
+			bool inUserHeap = (fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX);
+			bool inUserStack = (fault_va >= USTACKBOTTOM && fault_va <= USTACKTOP);
+			//If it's not unmap it and exit function
+			if (!inUserHeap && !inUserStack)
+			{
+				unmap_frame(faulted_env->env_page_directory, fault_va);
+				return;
+			}
+		}
+
+		//Inserting new element in WS
+		if(prevElement != NULL)
+		{
+			LIST_INSERT_AFTER(&(faulted_env->page_WS_list),prevElement,new_element);
+		}
+		else
+		{
+			LIST_INSERT_BEFORE(&(faulted_env->page_WS_list),nextElement,new_element);
+		}
+
+
+		//Updating page_last_WS_element pointer
+		faulted_env->page_last_WS_element = LIST_NEXT(new_element);
+		if(faulted_env->page_last_WS_element == NULL)
+		{
+			faulted_env->page_last_WS_element = LIST_FIRST(&(faulted_env->page_WS_list));
+		}
+
+
+		/* Debugging Prints */
+		//env_page_ws_print(faulted_env);
+		//cprintf("virtual address: %d \n",new_element->virtual_address);
+
 	}
 }
 
@@ -304,4 +506,3 @@ void __page_fault_handler_with_buffering(struct Env * curenv, uint32 fault_va)
 	// your code is here, remove the panic and write your code
 	panic("__page_fault_handler_with_buffering() is not implemented yet...!!");
 }
-

@@ -14,8 +14,8 @@ uint32 expectedInitialVAs[11] = {
 } ;
 
 uint32 expectedFinalVAs[11] = {
-		0xeebfd000, /*will be created during the call of sys_check_WS_list*/ //Stack
-		0x80a000, 0x804000, 0x80b000, 0x80c000,0x807000,0x800000,0x801000,0x808000,0x809000,0x803000,	//Code & Data
+		 /*will be created during the call of sys_check_WS_list*/ //Stack
+		0x80a000, 0x804000, 0x80b000, 0x80c000,0x807000,0x800000,0x801000,0x808000,0x809000,0x803000,0xeebfd000,	//Code & Data
 } ;
 
 void fillPage(char* arr, int pageIdx, char val)
