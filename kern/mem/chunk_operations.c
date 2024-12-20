@@ -328,8 +328,8 @@ void free_user_mem(struct Env* e, uint32 virtual_address, uint32 size)
 	// Write your code here, remove the panic and write your code
 	//panic("free_user_mem() is not implemented yet...!!");
 
-	uint32 roundingSize = ROUNDUP (size , PAGE_SIZE );
-	uint32 roundingVirtAddress = ROUNDDOWN (virtual_address , PAGE_SIZE );
+	uint32 roundingSize = ROUNDUP (size , PAGE_SIZE);
+	uint32 roundingVirtAddress = ROUNDDOWN (virtual_address , PAGE_SIZE);
 	uint32 endVirtualAddress = roundingVirtAddress + roundingSize ;
 
 	 for (uint32 i = roundingVirtAddress ; i < endVirtualAddress ; i += PAGE_SIZE)

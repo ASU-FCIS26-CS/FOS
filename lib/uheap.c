@@ -17,7 +17,7 @@ void* sbrk(int increment)
 // [2] ALLOCATE SPACE IN USER HEAP:
 //=================================
 
-static uint32 page_allocation_status[(USER_HEAP_MAX - USER_HEAP_START) / PAGE_SIZE] = {0}; // 0 = free, 1 = allocated
+uint32 page_allocation_status[(USER_HEAP_MAX - USER_HEAP_START) / PAGE_SIZE] = {0}; // 0 = free, 1 = allocated
 
 void* malloc(uint32 size)
 {
@@ -37,40 +37,35 @@ void* malloc(uint32 size)
     }
     else if (size > DYN_ALLOC_MAX_BLOCK_SIZE)
     {
-
-
         uint32 num_pages = (size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up to nearest page
         // Page Allocator for larger allocations
-
         uint32 required_size = num_pages * PAGE_SIZE;         // Total required size in bytes
         // First-Fit Strategy
 		for (uint32 addr = myEnv->rlimit + PAGE_SIZE; addr + required_size <= USER_HEAP_MAX - PAGE_SIZE; addr += PAGE_SIZE)
         {
+			// old
             uint32 index = (addr - USER_HEAP_START) / PAGE_SIZE;
             uint8 is_free = 1;
-
-
-            // // Check if all pages in the range are free
-            for (uint32 i = 0; i < num_pages; i++)
+            // Check if all pages in the range are free
+            for (uint32 i = 0; i < num_pages && (addr + required_size <= USER_HEAP_MAX - PAGE_SIZE); i++, addr++)
             {
-                if (page_allocation_status[index + i] != 0)
-                {
+            	cprintf("are we good?\n");
+            	//uint32* pageTable = (uint32*)myEnv->env_page_directory[PDX(addr)];
+            	uint32 page_directory_entry = myEnv->env_page_directory[PDX(addr)];
+            	cprintf("dir entry: %d\n", page_directory_entry);
+				//get_page_table(myEnv->env_page_directory , addr, &pageTable);
+				// create page table if not exist
+            	//cprintf("you sure? || %u \n", (uint32)pageTable);
+				//if(pageTable != NULL && pageTable[PTX(addr)] != 0){
                     is_free = 0;
-                    break;
-                }
+					break;
+				//}
             }
-			// cprintf("addr: %p , pagestatus[idx] %d\n", addr, page_allocation_status[index]);
-			// if(page_allocation_status[index ] == 0 ) return (void*)addr;
             if (is_free)
             {
                 // Mark the pages as allocated
-                for (uint32 i = 0; i < num_pages; i++)
-                {
-                    page_allocation_status[index + i] = index;
-                }
-
+            	//page_allocation_status[index] = num_pages;
                 sys_allocate_user_mem(addr, required_size);
-
                 // Return the starting address of the allocated space
                 return (void*)addr;
             }
@@ -80,20 +75,6 @@ void* malloc(uint32 size)
     // If allocation fails, return NULL
     return NULL;
 }
-// void* malloc(uint32 size)
-// {
-// 	//==============================================================
-// 	//DON'T CHANGE THIS CODE========================================
-// 	if (size == 0) return NULL ;
-// 	//==============================================================
-// 	//TODO: [PROJECT'24.MS2 - #12] [3] USER HEAP [USER SIDE] - malloc()
-// 	// Write your code here, remove the panic and write your code
-// 	panic("malloc() is not implemented yet...!!");
-// 	return NULL;
-// 	//Use sys_isUHeapPlacementStrategyFIRSTFIT() and	sys_isUHeapPlacementStrategyBESTFIT()
-// 	//to check the current strategy
-
-// }
 
 //=================================
 // [3] FREE SPACE FROM USER HEAP:
@@ -117,25 +98,27 @@ void free(void* virtual_address)
 	if (va >= myEnv->rlimit + PAGE_SIZE && va < USER_HEAP_MAX)
 	{
 		// Get the size of the allocation (number of pages)
-		// uint32 page_index = (va - myEnv->rlimit) / PAGE_SIZE;
+		// uint32 page_index = (va - rlimit) / PAGE_SIZE;
 		uint32 page_index = (va - USER_HEAP_START) / PAGE_SIZE;
 
-
         // Find how many pages were allocated for the given virtual address
-        uint32 num_pages = 0;
-        while (page_allocation_status[page_index + num_pages] == page_index) {
-            num_pages++;
-        }
+        uint32 num_pages = page_allocation_status[page_index];
+        //cprintf("index %d has no. of pages: %d\n", page_index, num_pages);
+//        while (page_allocation_status[page_index + num_pages] == page_index) {
+//            num_pages++;
+//        }
 
         // If the pages are allocated, free the pages
         if (num_pages > 0) {
-            // Mark the pages as free
-            for (uint32 i = 0; i < num_pages; i++) {
-                page_allocation_status[page_index + i] = 0;
-            }
+//            // Mark the pages as free
+//            for (uint32 i = 0; i < num_pages; i++) {
+//                page_allocation_status[page_index + i] = 0;
+//            }
 
             // Call the system function to free the user memory and page file
             sys_free_user_mem(va, num_pages * PAGE_SIZE);
+            page_allocation_status[page_index] = 0;
+
         }
     }
 	else {
@@ -164,24 +147,38 @@ void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 	{
 		uint32 index = (addr - USER_HEAP_START) / PAGE_SIZE;
 		uint8 is_free = 1;
+
 		// // Check if all pages in the range are free
-		for (uint32 i = 0; i < num_pages; i++)
+		for (uint32 i = 0; i < num_pages && (addr + required_size <= USER_HEAP_MAX - PAGE_SIZE); i++)
 		{
+			is_free = 1;
 			if (page_allocation_status[index + i] != 0)
 			{
 				is_free = 0;
-				break;
+				addr+= PAGE_SIZE*(i+page_allocation_status[index + i]);
+				index = (addr - USER_HEAP_START) / PAGE_SIZE;
+				i=-1;
 			}
 		}
+		// // Check if all pages in the range are free
+//		for (uint32 i = 0; i < num_pages; i++)
+//		{
+//			if (page_allocation_status[index + i] != 0)
+//			{
+//				is_free = 0;
+//				break;
+//			}
+//		}
 		// cprintf("addr: %p , pagestatus[idx] %d\n", addr, page_allocation_status[index]);
 		// if(page_allocation_status[index ] == 0 ) return (void*)addr;
 		if (is_free)
 		{
 			// Mark the pages as allocated
-			for (uint32 i = 0; i < num_pages; i++)
-			{
-				page_allocation_status[index + i] = index;
-			}
+			page_allocation_status[index] = num_pages;
+//			for (uint32 i = 0; i < num_pages; i++)
+//			{
+//				page_allocation_status[index + i] = index;
+//			}
 
 			uint32 sharedObjId = sys_createSharedObject(sharedVarName,required_size,isWritable,(void*)addr);
 			if(sharedObjId == E_SHARED_MEM_EXISTS){
@@ -221,24 +218,37 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 		uint32 index = (addr - USER_HEAP_START) / PAGE_SIZE;
 		uint8 is_free = 1;
 		// // Check if all pages in the range are free
-		for (uint32 i = 0; i < num_pages; i++)
+		for (uint32 i = 0; i < num_pages && (addr + required_size <= USER_HEAP_MAX - PAGE_SIZE); i++)
 		{
+			is_free = 1;
 			if (page_allocation_status[index + i] != 0)
 			{
 				is_free = 0;
-				break;
+				addr+= PAGE_SIZE*(i+page_allocation_status[index + i]);
+				index = (addr - USER_HEAP_START) / PAGE_SIZE;
+				i=-1;
 			}
 		}
+		// // Check if all pages in the range are free
+//		for (uint32 i = 0; i < num_pages; i++)
+//		{
+//			if (page_allocation_status[index + i] != 0)
+//			{
+//				is_free = 0;
+//				break;
+//			}
+//		}
 		// cprintf("addr: %p , pagestatus[idx] %d\n", addr, page_allocation_status[index]);
 		// if(page_allocation_status[index ] == 0 ) return (void*)addr;
 		// found enough space in VM
 		if (is_free)
 		{
 			// Mark the pages as allocated
-			for (uint32 i = 0; i < num_pages; i++)
-			{
-				page_allocation_status[index + i] = index;
-			}
+			page_allocation_status[index] = num_pages;
+//			for (uint32 i = 0; i < num_pages; i++)
+//			{
+//				page_allocation_status[index + i] = index;
+//			}
 
 			uint32 sharedObjId = sys_getSharedObject(ownerEnvID, sharedVarName, (void*)addr);
 			if(sharedObjId == E_SHARED_MEM_NOT_EXISTS){
@@ -251,7 +261,6 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 
 	// If no space in vm
 	return NULL;
-
 }
 
 

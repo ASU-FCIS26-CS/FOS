@@ -5,6 +5,7 @@
 void
 _main(void)
 {
+	cprintf("we got here");
 	int envID = sys_getenvid();
 
 	struct semaphore cs1 = create_semaphore("cs1", 1);

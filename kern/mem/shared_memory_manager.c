@@ -109,8 +109,8 @@ struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 is
 	// setup data
 	newShare->ID = (int32)newShare & 0x7FFFFFFF; //address of object + masking the MSB (make it +ve)
 	newShare->ownerID = ownerID;
-	uint32 i;
-	for(i = 0; i < nameSize; i++){
+	uint32 i=0;
+	for(; i < nameSize; i++){
 		(newShare->name)[i] = shareName[i];
 	}
 	// pad with null terminator
@@ -144,11 +144,11 @@ struct Share* get_share(int32 ownerID, char* name)
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
 	//panic("get_share is not implemented yet");
 	//Your Code is Here...
-	acquire_spinlock(&AllShares.shareslock);
 
 	struct Share *desiredObject = NULL;
 	struct Share *currentOb = NULL;
 
+	acquire_spinlock(&AllShares.shareslock);
 	LIST_FOREACH(currentOb, &(AllShares.shares_list)){
 		if(strcmp((currentOb->name), name)==0 && (currentOb->ownerID) == ownerID){
 			//cprintf("found obj");
@@ -156,7 +156,6 @@ struct Share* get_share(int32 ownerID, char* name)
 			break;
 		}
 	}
-
 	release_spinlock(&AllShares.shareslock);
 
 	return desiredObject;

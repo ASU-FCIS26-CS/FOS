@@ -29,6 +29,8 @@ _main(void)
 		uint32* vars[NUM_OF_OBJS];
 		for (int s = 0; s < NUM_OF_OBJS; ++s)
 		{
+			if(s%10 == 0)
+				cprintf("s is %d\n", s);
 			char index[10];
 			ltostr(s, index);
 			strcconcat(initname, index, name);
@@ -37,6 +39,8 @@ _main(void)
 		}
 		for (int s = 0; s < NUM_OF_OBJS; ++s)
 		{
+			if(s%1000 == 0)
+				cprintf("idx: %d || val: %d\n", s, *vars[s]);
 			assert(*vars[s] == s);
 		}
 	}

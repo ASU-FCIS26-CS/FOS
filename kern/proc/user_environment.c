@@ -127,8 +127,14 @@ struct Env* env_create(char* user_program_name, unsigned int page_WS_size, unsig
 	{
 		return NULL;
 	}
+	// ---- Added Stuff ---- //
+
 	// set starv
 	e->nStarv = 0;
+
+	//memset(e->page_allocation_status, 0, sizeof(e->page_allocation_status)*sizeof(e->page_allocation_status[0]));
+
+	// ---- End of Added Stuff ---- //
 	//[2.5 - 2012] Set program name inside the environment
 	//e->prog_name = ptr_user_program_info->name ;
 	//2017: changed to fixed size array to be abale to access it from user side

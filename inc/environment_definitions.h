@@ -125,6 +125,8 @@ struct Env {
 	uint32 brk;
 	uint32 rlimit;
 
+	//uint32 page_allocation_status[(USER_HEAP_MAX - USER_HEAP_START) / PAGE_SIZE];
+
 	//=======================================================================
 	//for page file management
 	uint32* disk_env_pgdir;
