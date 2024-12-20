@@ -299,7 +299,8 @@ if(isPageReplacmentAlgorithmNchanceCLOCK())
 			int checking  = pf_read_env_page(faulted_env , &fault_va);
 			//cprintf("%d",fault_va);
             //cprintf("%d",checking);
-			
+		//if(checking == 0 || (checking == E_PAGE_NOT_EXIST_IN_PF && ((fault_va >= USER_HEAP_START && fault_va <= USER_HEAP_MAX) || (fault_va >= USTACKBOTTOM && fault_va <= USTACKTOP))))
+		//{
 		int maxClock;
 		if(page_WS_max_sweeps < 0)
 		{
@@ -343,7 +344,7 @@ if(isPageReplacmentAlgorithmNchanceCLOCK())
 
 					if(page_WS_max_sweeps < 0)
 					{
-                        if((sCounter == maxClock && !(perms & PERM_MODIFIED)) || (sCounter == (maxClock + 1) && (perms & PERM_MODIFIED))){
+                        if((!(perms & PERM_MODIFIED) && sCounter == maxClock) || ((perms & PERM_MODIFIED) && sCounter == (maxClock + 1))){
 							Algo = 1;
 						}
 					}
@@ -391,6 +392,12 @@ if(isPageReplacmentAlgorithmNchanceCLOCK())
 					}
 				}
 			}
+		//}
+		/*else
+		{
+			cprintf("hello\n");
+			//env_exit();
+		}*/	
 		}
 	}
 }
