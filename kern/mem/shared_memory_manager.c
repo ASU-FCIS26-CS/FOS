@@ -82,6 +82,7 @@ inline struct FrameInfo** create_frames_storage(int numOfFrames)
 			return NULL;
 	// initialize to zeros
 	memset(FramesArr, 0, sizeof(char)*numOfFrames);
+
 	return FramesArr;
 
 }
@@ -92,7 +93,7 @@ inline struct FrameInfo** create_frames_storage(int numOfFrames)
 //Allocates a new shared object and initialize its member
 //It dynamically creates the "framesStorage"
 //Return: allocatedObject (pointer to struct Share) passed by reference
-struct Share* create_share(int32 ownerID, char* shareName, uint32 size, uint8 isWritable)
+struct Share*  create_share(int32 ownerID, char* shareName, uint32 size, uint8 isWritable)
 {
 	//TODO: [PROJECT'24.MS2 - #16] [4] SHARED MEMORY - create_share()
 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
@@ -210,6 +211,7 @@ int createSharedObject(int32 ownerID, char* shareName, uint32 size, uint8 isWrit
 				//map each VA to frame and add the frame to framesStorage array
 				map_frame((myenv->env_page_directory),objectFrame,currentV,PERM_USER | PERM_WRITEABLE);
 				new_object->framesStorage[frameIndex] = objectFrame;
+				// cprintf("frame at index %d is %p\n",frameIndex,objectFrame);
 				frameIndex++;
 			}
 			//cprintf("virtual_address%p , endOfObject:%p frameIndex:%d\n",virtual_address,endOfObject,frameIndex);
@@ -285,22 +287,139 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 //==========================
 //delete the given shared object from the "shares_list"
 //it should free its framesStorage and the share object itself
-void free_share(struct Share* ptrShare)
-{
-	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - free_share()
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("free_share is not implemented yet");
-	//Your Code is Here...
+// void free_share(struct Share* ptrShare)
+// {
+// 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - free_share()
+// 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
+// 	// panic("free_share is not implemented yet");
+// 	//Your Code is Here...
 
+
+
+void free_share(struct Share *ptrShare)
+{
+	// Acquire lock to ensure thread safety
+	acquire_spinlock(&(AllShares.shareslock));
+
+	// Remove the share from the global list
+	struct Share *curr;
+	LIST_FOREACH(curr, &(AllShares.shares_list))
+	{
+		if (curr == ptrShare)
+		{
+			LIST_REMOVE(&(AllShares.shares_list), curr);
+			break;
+		}
+	}
+
+	release_spinlock(&(AllShares.shareslock));
+
+
+	
+
+	// Free associated frames
+	
+		// uint32 numFrames = (ptrShare->size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up
+		// uint32 numFrames= ROUNDDOWN(ptrShare->size/PAGE_SIZE,PAGE_SIZE);
+
+		uint32 numFrames = ptrShare->size / PAGE_SIZE;
+		for (uint32 frameIndex = 0; frameIndex < numFrames; frameIndex++)
+		{
+			if (ptrShare->framesStorage[frameIndex] != NULL)
+			{
+				// cprintf("Freeing frame at index %d: %p\n", frameIndex, ptrShare->framesStorage[frameIndex]);
+				free_frame(ptrShare->framesStorage[frameIndex]);
+			}
+		}
+
+		
+
+		// Free framesStorage array
+		cprintf("Free share frames storage :%p\n", ptrShare->framesStorage);
+		kfree(ptrShare->framesStorage);
+
+	// Free the Share structure itself
+	cprintf("Free share structure :%p\n", ptrShare);
+	kfree(ptrShare);
 }
 //========================
 // [B2] Free Share Object:
 //========================
+// int fre
+
+
+
+
 int freeSharedObject(int32 sharedObjectID, void *startVA)
 {
-	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - freeSharedObject()
-	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-	panic("freeSharedObject is not implemented yet");
-	//Your Code is Here...
+    // Locate the shared object from the global shares list
+    struct Share *sharedObj = NULL;
+    acquire_spinlock(&(AllShares.shareslock)); // Acquire lock to modify global list
+    struct Share *curr;
+    LIST_FOREACH(curr, &(AllShares.shares_list))
+    {
+        if (curr->ID == sharedObjectID)
+        {
+            sharedObj = curr;
+            break;
+        }
+    }
+    release_spinlock(&(AllShares.shareslock)); // Release lock after list manipulation
 
+    if (!sharedObj)
+    {
+        return E_NO_SHARE; // Return error if no such shared object is found
+    }
+    cprintf("Freeing shared object %s\n", sharedObj->name);
+
+    struct Env *myenv = get_cpu_proc();
+    uint32 endOfObject = ROUNDUP((uint32)startVA + (sharedObj->references * PAGE_SIZE), PAGE_SIZE);
+
+    // Unmap frames from the current process
+    for (int i = 0; i < sharedObj->references; i++)
+    {
+        uint32 va = (uint32)startVA + (i * PAGE_SIZE);
+        if ((uint32)sharedObj->framesStorage[i] == va) // Correct comparison
+        {
+            unmap_frame(myenv->env_page_directory, va); // Unmap frame
+            sharedObj->framesStorage[i] = NULL; // Nullify the frame storage
+        }
+    }
+
+    // // Check for empty page tables and remove them if necessary
+    for (uint32 va = (uint32)startVA; va < endOfObject; va += PAGE_SIZE)
+    {
+        uint32 *ptr_page_table = NULL;
+        get_page_table(myenv->env_page_directory, va, &ptr_page_table);
+
+        if (ptr_page_table != NULL)
+        {
+            int isTableEmpty = 1;
+            for (int page = 0; page < 1024; page++)
+            {
+                if (ptr_page_table[page] != 0)
+                {
+                    isTableEmpty = 0; // Found an entry in the page table
+                    break;
+                }
+            }
+
+            if (isTableEmpty)
+            {
+                pd_clear_page_dir_entry(myenv->env_page_directory, va); // Clear page dir entry
+                kfree((void *)ptr_page_table); // Free the page table
+            }
+        }
+    }
+
+    // Decrement references and check if the last reference is reached
+    if (--sharedObj->references == 0)
+    {
+        free_share(sharedObj); // Free the share object if no references remain
+    }
+
+    // Flush the Translation Lookaside Buffer (TLB) to ensure memory mappings are updated
+    tlbflush();
+
+    return 0; // Success
 }
