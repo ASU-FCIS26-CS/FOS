@@ -242,7 +242,7 @@ void kfree(void* virtual_address)
 ;			struct FrameInfo* frame = get_frame_info(ptr_page_directory, curr_address, &ptr_page_table);
 			if (frame != NULL)
 			{
-				//Rmoving this V_address from the array 
+				//Rmoving this V_address from the array
 				uint32 physicalAddress = to_physical_address(frame);
                 uint32 frameNumber = physicalAddress >> 12;
                 mapping_physicalFrames_to_virtualAddress[frameNumber] = 0;
@@ -305,7 +305,7 @@ unsigned int kheap_physical_address(unsigned int virtual_address)
   	//refer to the project presentation and documentation for details
 
   	//EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED ==================
-} 
+}
 
 
 
@@ -317,11 +317,11 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 	// Write your code here, remove the panic and write your code
 	//panic("kheap_virtual_address() is not implemented yet...!!");
 	  if (physical_address == 0) {
-        return 0; 
+        return 0;
     }
 
-	  uint32 frameNumber = physical_address >> 12;  
-    uint32 offset = physical_address & 0xFFF;      
+	  uint32 frameNumber = physical_address >> 12;
+    uint32 offset = physical_address & 0xFFF;
 
 	// Accessing the virtual address associated with this physical frame
     uint32 virtualAddress = mapping_physicalFrames_to_virtualAddress[frameNumber];
@@ -330,7 +330,7 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
     if (virtualAddress != 0) {
 
 		// Return the full virtual address
-        return virtualAddress + offset; 
+        return virtualAddress + offset;
     }
 
     // If no mapping is found, return 0

@@ -67,6 +67,7 @@ void 	sys_scarce_memory();
 
 //Dynamic Allocator
 void* 	sys_sbrk(int increment);
+//struct semaphore sys_get_semaphore (int32 ownerEnvID, char *semaphoreName);
 //******************
 
 //User Heap

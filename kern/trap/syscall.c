@@ -379,8 +379,8 @@ struct Env * sys_deqeue(struct Env_Queue *queue)
 {
     // init_queue(queue);
 	return dequeue(queue);
-
 }
+
 void sys_sched_insert_ready(struct Env *env) 
 {
     // init_queue(queue);

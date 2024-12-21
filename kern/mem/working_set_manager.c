@@ -25,7 +25,7 @@ inline struct WorkingSetElement* env_page_ws_list_create_element(struct Env* e, 
     // Initialize the new element with virtual address
     new_element->virtual_address = virtual_address;
     //cprintf("Size of WorkingSetElement: %u\n", sizeof(struct WorkingSetElement));
-
+    new_element->sweeps_counter = 0;
     // Adding the new element to the process's WS
     //LIST_INSERT_TAIL(&e->page_WS_list, new_element);
 
@@ -367,5 +367,4 @@ void half_WS_Size(struct Env* e, int isImmidiate)
 {
 	panic("not handled yet");
 }
-
 
