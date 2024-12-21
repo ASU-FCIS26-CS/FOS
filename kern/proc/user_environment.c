@@ -875,20 +875,18 @@ void* create_user_kern_stack(uint32* ptr_user_page_directory)
 	}
 	//cprintf("I'm here 2 \n");
 
-	// Calculate the address of the guard page (bottom of the stack region)
 	void* guard_page = kstack_base;
 
-	// Mark the guard page as unmapped in the page directory
 	uint32 guard_page_va = (uint32)guard_page;
 	if (!ptr_user_page_directory)
 	{
 		panic("Page directory pointer is NULL!");
 	}
-	// Unmap the guard page (set it as not present)
+	// Unmap the guard page
 	unmap_frame(ptr_user_page_directory, guard_page_va);
 	//cprintf("I'm here 3 \n");
 	uint32 base = (uint32) kstack_base;
-	// Return the top address of the stack (stack grows downward)
+	// Return the top address of the stack
 	void* stack_top = (void*)base;
 	base += KERNEL_STACK_SIZE;
 	base += PAGE_SIZE;
@@ -1240,5 +1238,4 @@ void cleanup_buffers(struct Env* e)
 	//	struct freeFramesCounters ffc2 = calculate_available_frames();
 	//	cprintf("[%s] aft, mod = %d, fb = %d, fnb = %d\n",curenv->prog_name, ffc2.modified, ffc2.freeBuffered, ffc2.freeNotBuffered);
 }
-
 
