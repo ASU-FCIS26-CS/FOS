@@ -13,14 +13,12 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 	struct semaphore sem;
 	sem.semdata = NULL;
 	
-	sem.semdata = smalloc(semaphoreName, sizeof(struct semaphore), 1);
+	sem.semdata = smalloc(semaphoreName, sizeof(struct __semdata), 1);
 
 	sem.semdata->count = value;
 	sys_init_queue(&sem.semdata->queue);
 	strcpy(sem.semdata->name, semaphoreName); // Set the semaphore name
 	sem.semdata->lock = 0;
-
-
 
 	return sem;
 }
@@ -59,9 +57,9 @@ void wait_semaphore(struct semaphore sem)
 	// do { xchg((volatile uint32*)&sem.semdata->lock, keyw); } while (keyw != 0);
 	//   struct spinlock semaphore_lock;
 
-	sys_acquire_spin_lock();
+	//sys_acquire_spin_lock();
 	// sys_acquire_spin_lock(&semaphore_lock);
-	// while (xchg(&(sem.semdata->lock), 1) != 0);
+	while (xchg(&(sem.semdata->lock), 1) != 0);
 	//     ;
 
 	// Decrement the semaphore count
@@ -76,19 +74,15 @@ void wait_semaphore(struct semaphore sem)
 		sys_enqeue(&(sem.semdata->queue), cur_env); // Pass a pointer to the queue
 		// Block the current process
 		cur_env->env_status = ENV_BLOCKED; // Mark the process as blocked
-		sem.semdata->lock = 0; // Release the lock
 	}
-	else
-	{
-		// Release the lock if no blocking is necessary
-		sem.semdata->lock = 0;
-	}
+	sem.semdata->lock = 0; // Release the lock
+	//xchg(&(sem.semdata->lock), 0);
 }
 
 void signal_semaphore(struct semaphore sem)
 {
 
-	// while (xchg(&(sem.semdata->lock), 1) != 0);
+	while (xchg(&(sem.semdata->lock), 1) != 0);
 	// sys_acquire_spin_lock();
 
 	// Increment the semaphore count
