@@ -149,6 +149,9 @@ int sys_destroy_env(int32 envid)
 {
 	return syscall(SYS_destroy_env, envid, 0, 0, 0, 0);
 }
+// struct Semaphore sys_get_semaphore(int32 envid, char* name){
+// 	return syscall(SYS_get_semaphore, envid, name, 0, 0, 0);
+// }
 
 int32 sys_getenvid(void)
 {

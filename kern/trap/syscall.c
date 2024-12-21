@@ -381,6 +381,32 @@ struct Env * sys_deqeue(struct Env_Queue *queue)
 	return dequeue(queue);
 
 }
+
+
+// struct semaphore SYS_get_semaphore(int32 ownerEnvID, char *semaphoreName){
+// 	cli();
+// 	struct semaphore sem;
+// 	sem.semdata = NULL;
+
+// 	//sys_acquire_spin_lock();
+// 	sem.semdata = sget(ownerEnvID, semaphoreName);
+// 	//sys_release_spin_lock();
+
+// 	if (sem.semdata == NULL)
+// 	{
+// 		cprintf("Error: Semaphore not found for ownerEnvID %d, semaphoreName %s\n", ownerEnvID, semaphoreName);
+	
+// 		return sem;
+// 	}
+
+// 	cprintf("Semaphore found: %s \n", sem.semdata->name);
+
+// 	// Release lock
+// 	sem.semdata->lock = 0;
+// 	//popcli();
+// 	sti();
+// 	return sem;
+// }
 void sys_sched_insert_ready(struct Env *env) 
 {
     // init_queue(queue);
@@ -578,6 +604,10 @@ uint32 syscall(uint32 syscallno, uint32 a1, uint32 a2, uint32 a3, uint32 a4, uin
 	case SYS_sbrk:
 		return (int)sys_sbrk((int)a1);
 		break;
+	// case SYS_get_semaphore: {
+	// 	return (struct semaphore)SYS_get_semaphore((int)a1, (char*)a2); // Cast a1 to the correct type
+	// }
+	// 	break;
 	case SYS_free_user_mem:
 		sys_free_user_mem(a1, a2);
 		return 0;

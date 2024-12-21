@@ -4,7 +4,6 @@
 
 struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 {
-	cprintf("create_semaphore called \n");
 
 	// TODO: [PROJECT'24.MS3 - #02] [2] USER-LEVEL SEMAPHORE - create_semaphore
 	// COMMENT THE FOLLOWING LINE BEFORE START CODING
@@ -18,6 +17,7 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 	sem.semdata->count = value;
 	sys_init_queue(&sem.semdata->queue);
 	strcpy(sem.semdata->name, semaphoreName); // Set the semaphore name
+	cprintf("create_semaphore called -> %s\n", sem.semdata->name);
 	sem.semdata->lock = 0;
 
 	return sem;
@@ -25,7 +25,8 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 
 struct semaphore get_semaphore(int32 ownerEnvID, char *semaphoreName)
 {
-	
+	//pushcli();
+	//cli();
 	struct semaphore sem;
 	sem.semdata = NULL;
 
@@ -40,18 +41,20 @@ struct semaphore get_semaphore(int32 ownerEnvID, char *semaphoreName)
 		return sem;
 	}
 
-	cprintf("Semaphore found: %p\n", sem.semdata);
+	cprintf("Semaphore found: %s \n", sem.semdata->name);
 
 	// Release lock
 	sem.semdata->lock = 0;
-	
+	//popcli();
+	//sti();
 	return sem;
+	//return sys_get_semaphore(ownerEnvID, semaphoreName);
 }
 
 void wait_semaphore(struct semaphore sem)
 {
 
-	cprintf("wait_semaphore called \n");
+	//cprintf("wait_semaphore called \n");
 	// Use a spinlock to ensure atomic access to the semaphore data
 	//     uint32 keyw = 1;
 	// do { xchg((volatile uint32*)&sem.semdata->lock, keyw); } while (keyw != 0);
@@ -59,6 +62,8 @@ void wait_semaphore(struct semaphore sem)
 
 	//sys_acquire_spin_lock();
 	// sys_acquire_spin_lock(&semaphore_lock);
+	//pushcli();
+	//cli();
 	while (xchg(&(sem.semdata->lock), 1) != 0);
 	//     ;
 
@@ -76,12 +81,15 @@ void wait_semaphore(struct semaphore sem)
 		cur_env->env_status = ENV_BLOCKED; // Mark the process as blocked
 	}
 	sem.semdata->lock = 0; // Release the lock
+	//popcli();
+	//sti();
 	//xchg(&(sem.semdata->lock), 0);
 }
 
 void signal_semaphore(struct semaphore sem)
 {
-
+	//pushcli();
+	//cli();
 	while (xchg(&(sem.semdata->lock), 1) != 0);
 	// sys_acquire_spin_lock();
 
@@ -105,6 +113,8 @@ void signal_semaphore(struct semaphore sem)
 
 	// Release the spinlock
 	sem.semdata->lock = 0;
+	//popcli();
+	//sti();
 	//sys_release_spin_lock();
 	
 }
