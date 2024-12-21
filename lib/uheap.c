@@ -32,7 +32,7 @@
 //     }
 //     return (uint32)-1;  // Return -1 if not found
 // }
-#define MAX_SHARED_OBJECTS 2048  // Maximum number of shared objects
+#define MAX_SHARED_OBJECTS (USER_HEAP_MAX - USER_HEAP_START)/(PAGE_SIZE)  // Maximum number of shared objects
 
 typedef struct {
     void* virtual_address;
@@ -234,8 +234,8 @@ void free(void* virtual_address)
 //=================================
 void* smalloc(char *sharedVarName, uint32 size, uint8 isWritable)
 {
-	
-	cprintf("smalloc element %c\n",sharedVarName);
+
+	//cprintf("smalloc element %c\n",sharedVarName);
 	//==============================================================
 	//DON'T CHANGE THIS CODE========================================
 	if (size == 0) return NULL ;
@@ -383,12 +383,12 @@ void sfree(void* virtual_address) {
     uint32 va = (uint32)virtual_address;
 
     if (virtual_address == NULL) {
-        return; 
+        return;
     }
     cprintf("Virtual address is %p \n",va);
     uint32 sharedObjectId = find_shared_object_id(virtual_address);
     cprintf("id is %d \n",sharedObjectId);
-    
+
     if (sharedObjectId == (uint32)-1) {
         return;
     }
@@ -396,7 +396,7 @@ void sfree(void* virtual_address) {
     uint32 page_index = (va - USER_HEAP_START) / PAGE_SIZE;
     uint32 num_pages = 0;
 
-	
+
 	unfree_shared_object_mapping(virtual_address);
     // while (page_allocation_status[page_index + num_pages] == page_index) {
     while (page_allocation_status[page_index + num_pages] == 1) {

@@ -11,7 +11,7 @@ struct semaphore create_semaphore(char *semaphoreName, uint32 value)
 	// Your Code is Here...
 	struct semaphore sem;
 	sem.semdata = NULL;
-	
+
 	sem.semdata = smalloc(semaphoreName, sizeof(struct __semdata), 1);
 
 	sem.semdata->count = value;
@@ -37,7 +37,7 @@ struct semaphore get_semaphore(int32 ownerEnvID, char *semaphoreName)
 	if (sem.semdata == NULL)
 	{
 		cprintf("Error: Semaphore not found for ownerEnvID %d, semaphoreName %s\n", ownerEnvID, semaphoreName);
-	
+
 		return sem;
 	}
 
@@ -96,7 +96,7 @@ void signal_semaphore(struct semaphore sem)
 	// Increment the semaphore count
 	sem.semdata->count++;
 
-	
+
 	if (sem.semdata->count <= 0)
 	{
 		// Remove a process from the semaphore's queue
@@ -116,7 +116,7 @@ void signal_semaphore(struct semaphore sem)
 	//popcli();
 	//sti();
 	//sys_release_spin_lock();
-	
+
 }
 
 
