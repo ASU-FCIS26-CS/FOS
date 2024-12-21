@@ -464,13 +464,71 @@ void env_start(void)
 void env_free(struct Env *e)
 {
 	/*REMOVE THIS LINE BEFORE START CODING*/
-	return;
+	//return;
 	/**************************************/
 
 	//[PROJECT'24.MS3] BONUS [EXIT ENV] env_free
 	// your code is here, remove the panic and write your code
-	panic("env_free() is not implemented yet...!!");
+	//panic("env_free() is not implemented yet...!!");
+	//free ALL Pages
+	struct WorkingSetElement* currElement;
+	LIST_FOREACH(currElement,&(e->page_WS_list))
+	{
+		unmap_frame((e->env_page_directory),(currElement->virtual_address));
+		pt_clear_page_table_entry((e->env_page_directory),(currElement->virtual_address));
+		LIST_REMOVE(&(e->page_WS_list),currElement);
+	}
 
+    //free workingset
+	//kfree((void*)e->ptr_pageWorkingSet);
+
+    //Free shared objects
+    acquire_spinlock(&AllShares.shareslock);
+
+	struct Share *sharedObj;
+	struct FrameInfo *sharedFrame;
+	int numOfFrames = sizeof(sharedObj->framesStorage)/sizeof(sharedObj->framesStorage[0]);
+	LIST_FOREACH(sharedObj,&(AllShares.shares_list))
+	{
+		if(sharedObj->ownerID == e->env_id)
+		{
+			for(int count = 0;count < numOfFrames;count++)
+			{
+				sharedFrame = sharedObj->framesStorage[count];
+				free_frame(sharedFrame);
+			}
+			LIST_REMOVE(&(AllShares.shares_list),sharedObj);
+		}
+	}
+
+	release_spinlock(&AllShares.shareslock);
+
+    //free ALL page tables
+    uint32 *PGptr;
+	uint32 va = USER_HEAP_START;
+	while(va < USER_LIMIT)
+	{
+		get_page_table((e->env_page_directory),va,&(PGptr));
+		if(PGptr != NULL)
+		{
+			kfree((void*)PGptr);
+			pd_clear_page_dir_entry((e->env_page_directory),(uint32)va);
+		}
+		PGptr += PAGE_SIZE;
+	}
+
+    //free user kernal stack
+	uint32 stackPage = (uint32)e->kstack + PAGE_SIZE;
+	int i = 0;
+	while(i < 8)
+	{
+		kfree((void*)stackPage);
+		stackPage += PAGE_SIZE;
+		i++;
+	}
+
+    //free page directory
+    kfree((void*)e->env_page_directory);
 
 	// [9] remove this program from the page file
 	/*(ALREADY DONE for you)*/
@@ -482,6 +540,7 @@ void env_free(struct Env *e)
 	free_environment(e); /*(ALREADY DONE for you)*/ // (frees the environment (returns it back to the free environment list))
 	/*========================*/
 }
+
 
 //============================
 // 4) PLACE ENV IN EXIT QUEUE:
