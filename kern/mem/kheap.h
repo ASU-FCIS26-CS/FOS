@@ -46,7 +46,7 @@ int numOfKheapVACalls ;
 uint32 start;
 uint32 brk;
 uint32 rlimit;
-uint32 page_allocations[(KERNEL_HEAP_MAX-KERNEL_HEAP_START)/4096];
-uint32 mapping_physicalFrames_to_virtualAddress[(KERNEL_HEAP_MAX-KERNEL_HEAP_START)/4096];
+uint32 page_allocations[(KERNEL_HEAP_MAX-KERNEL_HEAP_START)/(4096*2)];
+uint32 mapping_physicalFrames_to_virtualAddress[(KERNEL_HEAP_MAX-KERNEL_HEAP_START)/(4096*2)];
 
 #endif // FOS_KERN_KHEAP_H_
