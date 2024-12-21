@@ -1,48 +1,15 @@
 #include <inc/lib.h>
 
 
-// #define MAX_SHARED_OBJECTS 2048  // Maximum number of shared objects
-
-// typedef struct {
-//     void* virtual_address;
-//     uint32 shared_object_id;
-// } SharedObjectMapping;
-
-// SharedObjectMapping sharedObjectMappings[MAX_SHARED_OBJECTS];
-
-// // Function to add a mapping from virtual address to shared object ID
-// void add_shared_object_mapping(void* virtual_address, uint32 shared_object_id) {
-//     for (int i = 0; i < MAX_SHARED_OBJECTS; i++) {
-//         if (sharedObjectMappings[i].virtual_address == NULL) {
-//             sharedObjectMappings[i].virtual_address = virtual_address;
-//             sharedObjectMappings[i].shared_object_id = shared_object_id;
-//             return;
-//         }
-//     }
-// 	    cprintf("Error: Shared object mapping array is full!\n");
-
-// }
-
-// // Function to find the shared object ID by virtual address
-// uint32 find_shared_object_id(void* virtual_address) {
-//     for (int i = 0; i < MAX_SHARED_OBJECTS; i++) {
-//         if (sharedObjectMappings[i].virtual_address == virtual_address) {
-//             return sharedObjectMappings[i].shared_object_id;
-//         }
-//     }
-//     return (uint32)-1;  // Return -1 if not found
-// }
-#define MAX_SHARED_OBJECTS 2048  // Maximum number of shared objects
-
+#define MAX_SHARED_OBJECTS 20048  
 typedef struct {
     void* virtual_address;
     uint32 shared_object_id;
-    uint32 num_pages;  // New field to store the number of pages
+    uint32 num_pages; 
 } SharedObjectMapping;
 
 SharedObjectMapping sharedObjectMappings[MAX_SHARED_OBJECTS];
 
-// Function to add a mapping from virtual address to shared object ID and the number of pages
 void add_shared_object_mapping(void* virtual_address, uint32 shared_object_id, uint32 num_pages) {
     for (int i = 0; i < MAX_SHARED_OBJECTS; i++) {
         if (sharedObjectMappings[i].virtual_address == NULL) {
@@ -55,35 +22,34 @@ void add_shared_object_mapping(void* virtual_address, uint32 shared_object_id, u
     cprintf("Error: Shared object mapping array is full!\n");
 }
 
-void unfree_shared_object_mapping(void* virtual_address){
-	   for (int i = 0; i < MAX_SHARED_OBJECTS; i++) {
-        if (sharedObjectMappings[i].virtual_address == virtual_address) {
+void unfree_shared_object_mapping(int i){
+	   
+       
             sharedObjectMappings[i].virtual_address = NULL;
             sharedObjectMappings[i].shared_object_id = 0;
             sharedObjectMappings[i].num_pages = 0;
-            break;
-        }
-    }
+       
+    
 }
 
 // Function to find the shared object ID by virtual address
 uint32 find_shared_object_id(void* virtual_address) {
     for (int i = 0; i < MAX_SHARED_OBJECTS; i++) {
         if (sharedObjectMappings[i].virtual_address == virtual_address) {
-            return sharedObjectMappings[i].shared_object_id;
+            // return sharedObjectMappings[i].shared_object_id;
+			return i ;
         }
     }
     return (uint32)-1;  // Return -1 if not found
 }
 
-// Function to get the number of pages for a given virtual address
 uint32 get_shared_object_num_pages(void* virtual_address) {
     for (int i = 0; i < MAX_SHARED_OBJECTS; i++) {
         if (sharedObjectMappings[i].virtual_address == virtual_address) {
             return sharedObjectMappings[i].num_pages;
         }
     }
-    return (uint32)-1;  // Return -1 if not found
+    return (uint32)-1;  
 }
 
 //==================================================================================//
@@ -369,52 +335,22 @@ void* sget(int32 ownerEnvID, char *sharedVarName)
 //	calls freeSharedObject(...) in "shared_memory_manager.c", then switch back to the user mode here
 //	the freeSharedObject() function is empty, make sure to implement it.
 
-// void sfree(void* virtual_address)
-// {
-// 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [USER SIDE] - sfree()
-// 	// Write your code here, remove the panic and write your code
-// 	panic("sfree() is not implemented yet...!!");
-// }
-
 
 void sfree(void* virtual_address) {
 
 	cprintf("sfree with virtual address: %p\n", virtual_address);
-    uint32 va = (uint32)virtual_address;
+;
 
     if (virtual_address == NULL) {
         return; 
     }
-    cprintf("Virtual address is %p \n",va);
-    uint32 sharedObjectId = find_shared_object_id(virtual_address);
-    cprintf("id is %d \n",sharedObjectId);
-    
-    if (sharedObjectId == (uint32)-1) {
-        return;
-    }
-    // uint32 num_pages = get_shared_object_num_pages(virtual_address);
-    uint32 page_index = (va - USER_HEAP_START) / PAGE_SIZE;
-    uint32 num_pages = 0;
+	uint32 va = ROUNDDOWN((uint32)virtual_address, PAGE_SIZE);
+    uint32 i = find_shared_object_id((void*)va);
+	uint32 sharedObjectId = sharedObjectMappings[i].shared_object_id;
+    sys_freeSharedObject(sharedObjectId, (void*)va );
+	sys_free_user_mem((uint32)va,sharedObjectMappings[i].num_pages*PAGE_SIZE);
+	unfree_shared_object_mapping(i);
 
-	
-	unfree_shared_object_mapping(virtual_address);
-    // while (page_allocation_status[page_index + num_pages] == page_index) {
-    while (page_allocation_status[page_index + num_pages] == 1) {
-        num_pages++;
-    }
-
-		cprintf("Page allocation status is %d \n",num_pages);
-    if (num_pages > 0) {
-		// cprintf("Page allocation status is %d \n",num_pages);
-        for (uint32 i = 0; i < num_pages; i++) {
-            page_allocation_status[page_index + i] = 0;
-        }
-		    // unmap_frame(myEnv->env_page_directory, virtual_address); // Unmap VA
-			// SYS_unmap_frame();
-			// __sys_unmap_frame()
-
-    }
-    sys_freeSharedObject(sharedObjectId, virtual_address);
 }
 
 //=================================

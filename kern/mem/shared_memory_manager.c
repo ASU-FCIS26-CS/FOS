@@ -12,6 +12,7 @@
 #include <kern/trap/syscall.h>
 #include "kheap.h"
 #include "memory_manager.h"
+#define EXTRACT_ADDRESS(entry)	((uint32) (entry) & ~0xFFF)
 
 //==================================================================================//
 //============================== GIVEN FUNCTIONS ===================================//
@@ -286,22 +287,12 @@ int getSharedObject(int32 ownerID, char* shareName, void* virtual_address)
 // [B1] Delete Share Object:
 //==========================
 //delete the given shared object from the "shares_list"
-//it should free its framesStorage and the share object itself
-// void free_share(struct Share* ptrShare)
-// {
-// 	//TODO: [PROJECT'24.MS2 - BONUS#4] [4] SHARED MEMORY [KERNEL SIDE] - free_share()
-// 	//COMMENT THE FOLLOWING LINE BEFORE START CODING
-// 	// panic("free_share is not implemented yet");
-// 	//Your Code is Here...
-
 
 
 void free_share(struct Share *ptrShare)
 {
-	// Acquire lock to ensure thread safety
 	acquire_spinlock(&(AllShares.shareslock));
 
-	// Remove the share from the global list
 	struct Share *curr;
 	LIST_FOREACH(curr, &(AllShares.shares_list))
 	{
@@ -311,50 +302,21 @@ void free_share(struct Share *ptrShare)
 			break;
 		}
 	}
-
 	release_spinlock(&(AllShares.shareslock));
-
-
-	
-
-	// Free associated frames
-	
-		// uint32 numFrames = (ptrShare->size + PAGE_SIZE - 1) / PAGE_SIZE; // Round up
-		// uint32 numFrames= ROUNDDOWN(ptrShare->size/PAGE_SIZE,PAGE_SIZE);
-
-		uint32 numFrames = ptrShare->size / PAGE_SIZE;
-		for (uint32 frameIndex = 0; frameIndex < numFrames; frameIndex++)
-		{
-			if (ptrShare->framesStorage[frameIndex] != NULL)
-			{
-				// cprintf("Freeing frame at index %d: %p\n", frameIndex, ptrShare->framesStorage[frameIndex]);
-				free_frame(ptrShare->framesStorage[frameIndex]);
-			}
-		}
-
-		
-
-		// Free framesStorage array
-		cprintf("Free share frames storage :%p\n", ptrShare->framesStorage);
-		kfree(ptrShare->framesStorage);
-
-	// Free the Share structure itself
-	cprintf("Free share structure :%p\n", ptrShare);
+	kfree(ptrShare->framesStorage);
 	kfree(ptrShare);
+
+
 }
-//========================
-// [B2] Free Share Object:
-//========================
-// int fre
 
 
 
 
 int freeSharedObject(int32 sharedObjectID, void *startVA)
 {
-    // Locate the shared object from the global shares list
+	cprintf("entered free shared obj");
     struct Share *sharedObj = NULL;
-    acquire_spinlock(&(AllShares.shareslock)); // Acquire lock to modify global list
+    acquire_spinlock(&(AllShares.shareslock)); 
     struct Share *curr;
     LIST_FOREACH(curr, &(AllShares.shares_list))
     {
@@ -364,62 +326,29 @@ int freeSharedObject(int32 sharedObjectID, void *startVA)
             break;
         }
     }
-    release_spinlock(&(AllShares.shareslock)); // Release lock after list manipulation
+    release_spinlock(&(AllShares.shareslock)); 
 
     if (!sharedObj)
     {
-        return E_NO_SHARE; // Return error if no such shared object is found
+        return E_NO_SHARE;
     }
-    cprintf("Freeing shared object %s\n", sharedObj->name);
+    // cprintf("Freeing shared object %s\n", sharedObj->name);
 
     struct Env *myenv = get_cpu_proc();
-    uint32 endOfObject = ROUNDUP((uint32)startVA + (sharedObj->references * PAGE_SIZE), PAGE_SIZE);
+	uint32 va = ROUNDDOWN((uint32)startVA, PAGE_SIZE);
+    uint32 endOfObject = ROUNDUP(va + (sharedObj->size) , PAGE_SIZE);
 
-    // Unmap frames from the current process
-    for (int i = 0; i < sharedObj->references; i++)
-    {
-        uint32 va = (uint32)startVA + (i * PAGE_SIZE);
-        if ((uint32)sharedObj->framesStorage[i] == va) // Correct comparison
-        {
-            unmap_frame(myenv->env_page_directory, va); // Unmap frame
-            sharedObj->framesStorage[i] = NULL; // Nullify the frame storage
-        }
-    }
-
-    // // Check for empty page tables and remove them if necessary
-    for (uint32 va = (uint32)startVA; va < endOfObject; va += PAGE_SIZE)
-    {
-        uint32 *ptr_page_table = NULL;
-        get_page_table(myenv->env_page_directory, va, &ptr_page_table);
-
-        if (ptr_page_table != NULL)
-        {
-            int isTableEmpty = 1;
-            for (int page = 0; page < 1024; page++)
-            {
-                if (ptr_page_table[page] != 0)
-                {
-                    isTableEmpty = 0; // Found an entry in the page table
-                    break;
-                }
-            }
-
-            if (isTableEmpty)
-            {
-                pd_clear_page_dir_entry(myenv->env_page_directory, va); // Clear page dir entry
-                kfree((void *)ptr_page_table); // Free the page table
-            }
-        }
-    }
-
-    // Decrement references and check if the last reference is reached
+	while( va < endOfObject) {
+		unmap_frame(myenv->env_page_directory,va);
+		 va+=PAGE_SIZE;
+	}
     if (--sharedObj->references == 0)
     {
-        free_share(sharedObj); // Free the share object if no references remain
+        free_share(sharedObj); 
     }
 
-    // Flush the Translation Lookaside Buffer (TLB) to ensure memory mappings are updated
+
     tlbflush();
 
-    return 0; // Success
+    return 0; 
 }
