@@ -26,7 +26,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	}
 
 	// initilaize mapping array to 0
-	for (uint32 i = 0; i < (1024*10)-1 ; i++)
+	for (uint32 i = 0; i < (KERNEL_HEAP_MAX-KERNEL_HEAP_START)/4096; i++)
      {
        mapping_physicalFrames_to_virtualAddress[i] = 0;
      }
@@ -49,7 +49,7 @@ int initialize_kheap_dynamic_allocator(uint32 daStart, uint32 initSizeToAllocate
 	initialize_dynamic_allocator(daStart, initSizeToAllocate);
 
 	// initialize allocations
-	for(int i=0; i < 2060; i++){
+	for(int i=0; i < (KERNEL_HEAP_MAX-KERNEL_HEAP_START)/4096; i++){
 		page_allocations[i] = 0;
 	}
 
